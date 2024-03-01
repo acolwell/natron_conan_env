@@ -1,0 +1,3 @@
+[submodule "modules/conan-center-index"]
+	path = modules/conan-center-index
+	url = https://github.com/acolwell/conan-center-index.git
