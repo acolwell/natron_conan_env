@@ -1,0 +1,11 @@
+sources:
+  "master":
+    url: "https://github.com/NatronGitHub/openfx-misc.git"
+    commit: "master"
+    CImgCommit: "b33dcc8f9f1acf1f276ded92c04f8231f6c23fcd"
+    CImg_H_SHA256: "bf8574b55d6bfc5a4849e4380d514e8886bd26b2f3af02b9a6e36eeb3295229f"
+    Inpaint_H_SHA256: "71ddbc6b754eb39d34d8692d84791b214af165f2ae1a1a8860ee0ec5eff61c84"
+
+patches:
+  "master":
+    - patch_file: "patches/install_pluginpath.patch"

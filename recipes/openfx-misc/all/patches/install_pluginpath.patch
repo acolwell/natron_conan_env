@@ -1,0 +1,11 @@
+--- a/openfx/Support/Plugins/Makefile.master
++++ b/openfx/Support/Plugins/Makefile.master
+@@ -52,7 +52,7 @@ ifeq ($(DEBUGFLAG),-O3)
+ endif
+ 
+ ifeq ($(OS:MINGW%=MINGW),MINGW)
+-  PLUGINPATH=C:\\Program Files\\Common Files\\OFX\\Plugins
++  PLUGINPATH=/usr/OFX/Plugins
+ endif
+ ifeq ($(OS),Linux)
+   PLUGINPATH=/usr/OFX/Plugins
