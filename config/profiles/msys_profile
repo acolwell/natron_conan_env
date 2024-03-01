@@ -1,0 +1,17 @@
+[settings]
+arch=x86_64
+build_type=Release
+compiler=gcc
+compiler.version=12.2
+compiler.exception=seh
+compiler.cppstd=gnu17
+compiler.libcxx=libstdc++11
+compiler.threads=posix
+os=Windows
+# Subsystem causes make to be used instead of mingw32-make when win_bash is not True
+os.subsystem=msys2
+
+[conf]
+#tools.microsoft.bash:active=True
+tools.microsoft.bash:subsystem=msys2
+tools.microsoft.bash:path=C:/tools/msys64/usr/bin/bash.exe
