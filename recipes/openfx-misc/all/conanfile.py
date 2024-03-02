@@ -24,14 +24,6 @@ class openFxMiscRecipe(ConanFile):
 
     _deps_lib_folder = "deps_libs"
 
-    def build_requirements(self):
-        #self.tool_requires("automake/1.16.5")
-        #self.tool_requires("make/4.4.1")
-        pass
-
-    def export_sources(self):
-        export_conandata_patches(self)
-
     def source(self):
         git = Git(self)
         git.fetch_commit(url=self.conan_data["sources"][self.version]["url"], commit=self.conan_data["sources"][self.version]["commit"])
@@ -86,24 +78,21 @@ class openFxMiscRecipe(ConanFile):
         cmake.install()
 
         plugin_arch = None
-        plugin_path = None
-        plugin_name = "Misc"
         if self.settings.os == "Windows":
             plugin_arch = "Win64"
-            plugin_path = os.path.join(self.package_folder, "usr", "OFX", "Plugins")
         elif self.settings.os == "Macos":
             plugin_arch = "MacOS"
-            plugin_path = os.path.join(self.package_folder, "Library", "OFX", "Plugins")
         elif self.settings.os == "Linux":
             plugin_arch = "Linux-x86-64"
-            plugin_path = os.path.join(self.package_folder, "usr", "OFX", "Plugins")
 
-        src_folder = os.path.join(self.build_folder, self._deps_lib_folder)
-        dst_folder = os.path.join(plugin_path, f"{plugin_name}.ofx.bundle", "Contents", plugin_arch)
-        copy(self, "*.dylib", src_folder, dst_folder)
-        copy(self, "*.dll", src_folder, dst_folder)
-        copy(self, "*.so.*", src_folder, dst_folder)
-        copy(self, "*.so", src_folder, dst_folder)
+        plugin_names = ["Misc", "CImg"]
+        for plugin_name in plugin_names:
+            src_folder = os.path.join(self.build_folder, self._deps_lib_folder)
+            dst_folder = os.path.join(self.package_folder, f"{plugin_name}.ofx.bundle", "Contents", plugin_arch)
+            copy(self, "*.dylib", src_folder, dst_folder)
+            copy(self, "*.dll", src_folder, dst_folder)
+            copy(self, "*.so.*", src_folder, dst_folder)
+            copy(self, "*.so", src_folder, dst_folder)
 
     def package_info(self):
         self.cpp_info.libs = ["openfx-misc"]

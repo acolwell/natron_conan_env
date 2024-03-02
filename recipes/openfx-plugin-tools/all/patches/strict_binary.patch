@@ -1,0 +1,101 @@
+diff -u src/third_party/ofxhBinaryStrict.cpp src/third_party/ofxhBinaryStrict.cpp
+--- src/third_party/ofxhBinaryStrict.cpp	2024-03-02 01:01:20.322560500 -0800
++++ src/third_party/ofxhBinaryStrict.cpp	2024-03-02 01:03:31.453846400 -0800
+@@ -1,11 +1,11 @@
+ // Copyright OpenFX and contributors to the OpenFX project.
+ // SPDX-License-Identifier: BSD-3-Clause
+ 
+-#include "ofxhBinary.h"
++#include "ofxhBinaryStrict.h"
+ 
+ using namespace OFX;
+ 
+-Binary::Binary(const std::string &binaryPath): _binaryPath(binaryPath), _invalid(false), _dlHandle(0), _users(0)
++BinaryStrict::BinaryStrict(const std::string &binaryPath): _binaryPath(binaryPath), _invalid(false), _dlHandle(0), _users(0)
+ {
+   struct stat sb;
+   if (stat(binaryPath.c_str(), &sb) != 0) {
+@@ -21,13 +21,13 @@
+ 
+ 
+ // actually open the binary.
+-void Binary::load() 
++void BinaryStrict::load() 
+ {
+   if(_invalid)
+     return;
+ 
+ #if defined (UNIX)
+-  _dlHandle = dlopen(_binaryPath.c_str(), RTLD_LAZY|RTLD_LOCAL);
++  _dlHandle = dlopen(_binaryPath.c_str(), RTLD_NOW|RTLD_LOCAL);
+ #else
+   _dlHandle = LoadLibrary(_binaryPath.c_str());
+ #endif
+@@ -57,7 +57,7 @@
+ }
+ 
+ /// close the binary
+-void Binary::unload() {
++void BinaryStrict::unload() {
+   if (_dlHandle != 0) {
+ #if defined (UNIX)
+     dlclose(_dlHandle);
+@@ -70,7 +70,7 @@
+ 
+ /// look up a symbol in the binary file and return it as a pointer.
+ /// returns null pointer if not found, or if the library is not loaded.
+-void *Binary::findSymbol(const std::string &symbol) {
++void *BinaryStrict::findSymbol(const std::string &symbol) {
+   if (_dlHandle != 0) {
+ #if defined(UNIX)
+     return dlsym(_dlHandle, symbol.c_str());
+@@ -83,7 +83,7 @@
+ }
+ 
+ 
+-void Binary::ref()
++void BinaryStrict::ref()
+ {
+   if (_users == 0) {
+     load();
+@@ -91,7 +91,7 @@
+   _users++;
+ }
+ 
+-void Binary::unref()
++void BinaryStrict::unref()
+ {
+   _users--;
+   if (_users == 0) {
+diff -u src/third_party/ofxhBinaryStrict.h src/third_party/ofxhBinaryStrict.h
+--- src/third_party/ofxhBinaryStrict.h	2024-03-02 01:01:20.322560500 -0800
++++ src/third_party/ofxhBinaryStrict.h	2024-03-02 01:01:33.576999600 -0800
+@@ -1,5 +1,5 @@
+-#ifndef OFX_BINARY_H
+-#define OFX_BINARY_H
++#ifndef OFX_BINARYSTRICT_H
++#define OFX_BINARYSTRICT_H
+ 
+ // Copyright OpenFX and contributors to the OpenFX project.
+ // SPDX-License-Identifier: BSD-3-Clause
+@@ -36,7 +36,7 @@
+ {
+ 
+   /// class representing a DLL/Shared Object/etc
+-  class Binary {
++  class BinaryStrict {
+     /// destruction will close the library and invalidate
+     /// any function pointers returned by lookupSymbol()
+   protected :
+@@ -54,9 +54,9 @@
+ 
+     /// create object representing the binary.  will stat() it, 
+     /// and this fails, will set binary to be invalid.
+-    Binary(const std::string &binaryPath);
++    BinaryStrict(const std::string &binaryPath);
+ 
+-    ~Binary() { unload(); }
++    ~BinaryStrict() { unload(); }
+ 
+     bool isLoaded() const { return _dlHandle != 0; }
+ 
