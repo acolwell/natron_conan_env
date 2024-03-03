@@ -19,7 +19,7 @@ class openfx_plugin_toolsRecipe(ConanFile):
     # Binary configuration
     settings = "os", "compiler", "build_type", "arch"
 
-    requires = "openfx/1.4.0", "expat/2.5.0"
+    requires = "openfx/1.4.0", "expat/2.4.8"
 
     # Sources are located in the same place as this recipe, copy them to the recipe
     exports_sources = "CMakeLists.txt", "src/*", "patches/*"
