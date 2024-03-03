@@ -1,0 +1,85 @@
+name: Tests
+
+on:
+  workflow_dispatch: {}
+  push: {}
+  pull_request: {}
+
+  schedule:
+    - cron:  '12 12 * * *'
+
+jobs:
+  linux_test:
+    name: Test Linux
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4.1.1
+        with:
+          submodules: recursive
+
+      - name: Install Linux system packages
+        run: |
+          sudo apt update
+          sudo apt install build-essential cmake extra-cmake-modules libgl-dev
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12' 
+          cache: 'pip' # caching pip dependencies
+
+      - name: Install Pip requirements
+        run: |
+          pip install -r .github/workflows/requirements.txt
+
+      - name: Install conan config
+        run: |
+          conan config install -t dir config
+
+      - name: Export recipes
+        run: |
+          python scripts/exportRecipes.py ${{ github.workspace }}
+
+      - name: Build
+        run: |
+          cd recipes/openfx-misc/all
+          conan create -pr:a linux_default . --version=master --build=missing
+      
+
+  win_test:
+    name: Test Windows
+    runs-on: windows-latest
+
+    env:
+      CONAN_BUILD_WORKSPACE: 'D:/cbw'
+      
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4.1.1
+        with:
+          submodules: recursive
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12' 
+          cache: 'pip' # caching pip dependencies
+
+      - name: Install Pip requirements
+        run: |
+          pip install -r .github/workflows/requirements.txt
+
+      - name: Install conan config
+        run: |
+          conan config install -t dir config
+
+      - name: Export recipes
+        run: |
+          python scripts\exportRecipes.py ${{ github.workspace }}
+
+      - name: Build
+        run: |
+          cd recipes\openfx-misc\all
+          conan create -pr:a msvc_profile . --version=master --build=missing
