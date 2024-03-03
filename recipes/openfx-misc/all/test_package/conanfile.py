@@ -13,7 +13,6 @@ class openFxMiscTestConan(ConanFile):
 
     def test(self):
         if can_run(self):
-            plugin_name = "Misc"
             plugin_names = ["Misc", "CImg"]
             for plugin_name in plugin_names:
                 if self.settings.os == "Windows":
@@ -23,6 +22,5 @@ class openFxMiscTestConan(ConanFile):
                 elif self.settings.os == "Linux":
                     plugin_arch = "Linux-x86-64"
                 pluginPath = os.path.join(self.dependencies[self.tested_reference_str].package_folder, "{}.ofx.bundle".format(plugin_name), "Contents", plugin_arch, "{}.ofx".format(plugin_name))
-                print("NEE ",pluginPath)
 
                 self.run("verify_openfx_plugin_loads {}".format(pluginPath), env="conanrun")
