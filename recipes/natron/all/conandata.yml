@@ -1,0 +1,16 @@
+sources:
+  "RB-2.6":
+    url: "https://github.com/NatronGitHub/Natron.git"
+    commit: "RB-2.6"
+
+  "conan_build":
+    url: "https://github.com/acolwell/Natron.git"
+    commit: "conan_build"
+
+  "qt6_fixes":
+    url: "https://github.com/acolwell/Natron.git"
+    commit: "qt6_fixes"
+
+patches:
+  "conan_build":
+    - patch_file: "patches/conan_build_changes.patch"

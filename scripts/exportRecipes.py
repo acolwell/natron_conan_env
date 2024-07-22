@@ -24,6 +24,9 @@ def main(argv):
 	recipe_entries.append(RecipeInfo("modules/openfx", "1.4.0"))
 	recipe_entries.append(RecipeInfo("recipes/openfx-misc/all", "master"))
 	recipe_entries.append(RecipeInfo("recipes/openfx-plugin-tools/all", "0.1"))
+	recipe_entries.append(RecipeInfo("recipes/natron/all", "conan_build"))
+	recipe_entries.append(RecipeInfo("recipes/clang/all", "18.1.0"))
+	recipe_entries.append(RecipeInfo("recipes/llvm/all", "18.1.0"))
 
 	for ri in recipe_entries:
 		print(ri.path)

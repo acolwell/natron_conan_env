@@ -1,0 +1,205 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 13c18c1..2728f2e 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -57,24 +57,24 @@ endif()
+ find_package(Python3 COMPONENTS Interpreter Development)
+ find_package(Qt5 5.15 CONFIG REQUIRED COMPONENTS Core Gui Network Widgets Concurrent)
+ 
+-if(IS_DEBUG_BUILD AND WIN32)
++#if(IS_DEBUG_BUILD AND WIN32)
+     # Explicitly setting SHIBOKEN_PYTHON_LIBRARIES variable to avoid PYTHON_DEBUG_LIBRARY-NOTFOUND
+     # link errors on Windows debug builds.
+-    set(SHIBOKEN_PYTHON_LIBRARIES ${Python3_LIBRARIES})
+-endif()
+-find_package(Shiboken2 5.15 CONFIG REQUIRED COMPONENTS libshiboken2 shiboken2)
++#    set(SHIBOKEN_PYTHON_LIBRARIES ${Python3_LIBRARIES})
++#endif()
++#find_package(Shiboken2 5.15 CONFIG REQUIRED COMPONENTS libshiboken2 shiboken2)
+ 
+-if(IS_DEBUG_BUILD AND WIN32)
++#if(IS_DEBUG_BUILD AND WIN32)
+     # Remove NDEBUG from Shiboken2 INTERFACE_COMPILE_DEFINITIONS so it is not inherited in debug builds.
+-    get_property(ShibokenInterfaceDefs TARGET Shiboken2::libshiboken PROPERTY INTERFACE_COMPILE_DEFINITIONS)
+-    list(REMOVE_ITEM ShibokenInterfaceDefs NDEBUG)
+-    set_property(TARGET Shiboken2::libshiboken PROPERTY INTERFACE_COMPILE_DEFINITIONS ShibokenInterfaceDefs)
+-endif()
++#    get_property(ShibokenInterfaceDefs TARGET Shiboken2::libshiboken PROPERTY INTERFACE_COMPILE_DEFINITIONS)
++#    list(REMOVE_ITEM ShibokenInterfaceDefs NDEBUG)
++#    set_property(TARGET Shiboken2::libshiboken PROPERTY INTERFACE_COMPILE_DEFINITIONS ShibokenInterfaceDefs)
++#endif()
+ 
+-find_package(PySide2 5.15 CONFIG REQUIRED COMPONENTS pyside2)
++#find_package(PySide2 5.15 CONFIG REQUIRED COMPONENTS pyside2)
+ set(QT_VERSION_MAJOR 5)
+-get_target_property(PYSIDE_INCLUDE_DIRS PySide2::pyside2 INTERFACE_INCLUDE_DIRECTORIES)
+-string(REGEX REPLACE "(.*)QtCore$" "\\1" Qt5_INCLUDE_DIR ${Qt5Core_INCLUDE_DIRS})
++#get_target_property(PYSIDE_INCLUDE_DIRS PySide2::pyside2 INTERFACE_INCLUDE_DIRECTORIES)
++#string(REGEX REPLACE "(.*)QtCore$" "\\1" Qt5_INCLUDE_DIR ${Qt5Core_INCLUDE_DIRS})
+ set(QTCORE_INCLUDE_DIRS ${Qt5_INCLUDE_DIR} ${Qt5Core_INCLUDE_DIRS})
+ set(QTGUI_INCLUDE_DIRS ${Qt5Gui_INCLUDE_DIRS})
+ set(QTWIDGETS_INCLUDE_DIRS ${Qt5Widgets_INCLUDE_DIRS})
+@@ -104,7 +104,7 @@ if(UNIX AND NOT APPLE)
+     find_package(ECM NO_MODULE)
+     set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${CMAKE_MODULE_PATH})
+     find_package(X11 REQUIRED)
+-    find_package(Wayland COMPONENTS Client Egl)
++    find_package(wayland COMPONENTS client egl)
+ elseif(APPLE)
+     enable_language(OBJCXX)
+ elseif(WIN32)
+diff --git a/Engine/AppManager.cpp b/Engine/AppManager.cpp
+index 586c5e3..c26c4b1 100644
+--- a/Engine/AppManager.cpp
++++ b/Engine/AppManager.cpp
+@@ -139,7 +139,8 @@
+ #include "Engine/ViewerInstance.h" // RenderStatsMap
+ #include "Engine/WriteNode.h"
+ 
+-#include "sbkversion.h" // shiboken/pyside version
++#define SHIBOKEN_VERSION "5.15.13"
++//#include "sbkversion.h" // shiboken/pyside version
+ 
+ #include "AppManagerPrivate.h" // include breakpad after Engine, because it includes /usr/include/AssertMacros.h on OS X which defines a check(x) macro, which conflicts with boost
+ 
+@@ -3045,10 +3046,10 @@ PyObject* PyInit_NatronEngine();
+ void
+ AppManager::initBuiltinPythonModules()
+ {
+-    int ret = PyImport_AppendInittab(NATRON_ENGINE_PYTHON_MODULE_NAME, &PyInit_NatronEngine);
+-    if (ret == -1) {
+-        throw std::runtime_error("Failed to initialize built-in Python module.");
+-    }
++    //int ret = PyImport_AppendInittab(NATRON_ENGINE_PYTHON_MODULE_NAME, &PyInit_NatronEngine);
++    //if (ret == -1) {
++    //    throw std::runtime_error("Failed to initialize built-in Python module.");
++    //}
+ }
+ 
+ void
+diff --git a/Engine/CMakeLists.txt b/Engine/CMakeLists.txt
+index bd9eebd..018aff3 100644
+--- a/Engine/CMakeLists.txt
++++ b/Engine/CMakeLists.txt
+@@ -17,9 +17,8 @@
+ # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ # ***** END LICENSE BLOCK *****
+ 
+-include(FindPkgConfig)
+-
+-pkg_check_modules(Cairo REQUIRED IMPORTED_TARGET cairo fontconfig)
++find_package(cairo COMPONENTS cairo)
++find_package(Fontconfig COMPONENTS Fontconfig)
+ 
+ file(GLOB NatronEngine_HEADERS *.h)
+ file(GLOB NatronEngine_SOURCES *.cpp)
+@@ -62,7 +61,7 @@ endif()
+ 
+ list(APPEND NatronEngine_SOURCES
+     ${NatronEngine_SOURCES}
+-    ${PyEngine_SOURCES}
++    #${PyEngine_SOURCES}
+     ../Global/glad_source.c
+     ../Global/FStreamsSupport.cpp
+     ../Global/ProcInfo.cpp
+@@ -76,10 +75,11 @@ target_link_libraries(NatronEngine
+         HostSupport
+         Boost::headers
+         Boost::serialization
+-        PkgConfig::Cairo
++        #PkgConfig::Cairo
++        cairo::cairo
+     PRIVATE
+-        Shiboken2::libshiboken
+-        PySide2::pyside2
++        #Shiboken2::libshiboken
++        #PySide2::pyside2
+         Qt5::Core
+         Qt5::Concurrent
+         Qt5::Network
+diff --git a/Gui/CMakeLists.txt b/Gui/CMakeLists.txt
+index d20159d..f88a5f3 100644
+--- a/Gui/CMakeLists.txt
++++ b/Gui/CMakeLists.txt
+@@ -57,14 +57,14 @@ endif()
+ 
+ list(APPEND NatronGui_SOURCES
+     ${NatronGui_SOURCES}
+-    ${PyGui_SOURCES}
++    #${PyGui_SOURCES}
+     GuiResources.qrc
+ )
+ add_library(NatronGui STATIC ${NatronGui_HEADERS} ${NatronGui_SOURCES})
+ target_link_libraries(NatronGui
+     PUBLIC
+-        Shiboken2::libshiboken
+-        PySide2::pyside2
++        #Shiboken2::libshiboken
++        #PySide2::pyside2
+         Qt5::Core
+         Qt5::Concurrent
+         Qt5::Network
+diff --git a/Gui/GuiApplicationManager10.cpp b/Gui/GuiApplicationManager10.cpp
+index 99bda26..2294b13 100644
+--- a/Gui/GuiApplicationManager10.cpp
++++ b/Gui/GuiApplicationManager10.cpp
+@@ -1149,10 +1149,10 @@ GuiApplicationManager::initBuiltinPythonModules()
+ {
+     AppManager::initBuiltinPythonModules();
+ 
+-    int ret = PyImport_AppendInittab(NATRON_GUI_PYTHON_MODULE_NAME, &PyInit_NatronGui);
+-    if (ret == -1) {
+-        throw std::runtime_error("Failed to initialize built-in Python module.");
+-    }
++    //int ret = PyImport_AppendInittab(NATRON_GUI_PYTHON_MODULE_NAME, &PyInit_NatronGui);
++    //if (ret == -1) {
++    //    throw std::runtime_error("Failed to initialize built-in Python module.");
++    //}
+ }
+ 
+ void
+diff --git a/HostSupport/CMakeLists.txt b/HostSupport/CMakeLists.txt
+index 86d772e..37f0004 100644
+--- a/HostSupport/CMakeLists.txt
++++ b/HostSupport/CMakeLists.txt
+@@ -18,7 +18,7 @@
+ # ***** END LICENSE BLOCK *****
+ 
+ # see https://cmake.org/cmake/help/latest/module/FindEXPAT.html
+-find_package(EXPAT REQUIRED)
++find_package(expat REQUIRED)
+ 
+ file(GLOB HostSupport_HEADERS
+     ../libs/OpenFX/HostSupport/include/*.h
+@@ -46,7 +46,7 @@ set(HostSupport_SOURCES
+ add_library(HostSupport STATIC ${HostSupport_SOURCES})
+ target_link_libraries(HostSupport
+     PRIVATE
+-        EXPAT::EXPAT
++        expat::expat
+ )
+ target_include_directories(HostSupport
+     PUBLIC
+diff --git a/libs/libmv/libmv/logging/logging.h b/libs/libmv/libmv/logging/logging.h
+index dcc6a3a..a544f60 100644
+--- a/libs/libmv/libmv/logging/logging.h
++++ b/libs/libmv/libmv/logging/logging.h
+@@ -21,6 +21,9 @@
+ #ifndef LIBMV_LOGGING_LOGGING_H
+ #define LIBMV_LOGGING_LOGGING_H
+ 
++#ifdef ERROR
++#undef ERROR
++#endif
+ #include <glog/logging.h>
+ 
+ #ifdef DEBUG
+@@ -34,7 +37,7 @@
+ true ? (void) 0 : google::LogMessageVoidify() & LOG(severity)
+ #endif
+ 
+-#define LG LIBMV_LOG(INFO)
++//#define LG LIBMV_LOG(INFO)
+ #define V0 LIBMV_LOG(INFO)
+ #define V1 LIBMV_LOG(INFO)
+ #define V2 LIBMV_LOG(INFO)
