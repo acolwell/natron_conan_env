@@ -4,34 +4,32 @@ import os.path
 import subprocess
 import sys
 
-class RecipeInfo:
-	def __init__(self, path, version):
-		self.path = path
-		self.version = version
+from natron_conan_env import RecipeInfo
 
-def main(argv):
-	if (len(argv) < 2):
-		print("Usage: {} <repo_root_dir>", argv[0])
-		exit(1)
-
-	repo_root_dir = argv[1]
+def exportRecipes(repo_root_dir):
 	if not os.path.isdir(repo_root_dir):
 		print("{} is not a directory.".format(repo_root_dir))
-		exit(1)
+		return 1
 
 
-	recipe_entries = []
-	recipe_entries.append(RecipeInfo("modules/openfx", "1.4.0"))
-	recipe_entries.append(RecipeInfo("recipes/openfx-misc/all", "master"))
-	recipe_entries.append(RecipeInfo("recipes/openfx-plugin-tools/all", "0.1"))
-	recipe_entries.append(RecipeInfo("recipes/natron/all", "conan_build"))
-	recipe_entries.append(RecipeInfo("recipes/clang/all", "18.1.0"))
-	recipe_entries.append(RecipeInfo("recipes/llvm/all", "18.1.0"))
+	recipe_entries = [
+		RecipeInfo("modules/openfx", "openfx", "1.4.0"),
+		RecipeInfo("recipes/openfx-misc/all", "openfx-misc", "master"),
+		RecipeInfo("recipes/openfx-plugin-tools/all", "openfx-plugin-tools", "0.1"),
+		RecipeInfo("recipes/natron/all", "natron", "conan_build"),
+		RecipeInfo("recipes/clang/all", "clang", "18.1.0"),
+		RecipeInfo("recipes/llvm/all", "llvm", "18.1.0")
+	]
 
 	for ri in recipe_entries:
-		print(ri.path)
+		print(f"\nExporting {ri.path}")
 		subprocess.run(["conan", "export", ".", "--version={}".format(ri.version)],
 			cwd=os.path.join(repo_root_dir, ri.path))
 
+	return 0
+
 if __name__ == "__main__":
-    main(sys.argv[:])
+	if (len(sys.argv) < 2):
+		print("Usage: {} <repo_root_dir>", sys.argv[0])
+		exit(1)
+	exit(exportRecipes(sys.argv[1]))
