@@ -13,6 +13,9 @@ jobs:
     name: Test Linux
     runs-on: ubuntu-latest
 
+    env:
+      CONAN_CACHE_FILENAME: 'conan-cache-save_ubuntu-latest.tgz'
+
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4.1.1
@@ -47,6 +50,11 @@ jobs:
         run: |
           conan config install -t dir config
 
+      - name: Restore conan cache
+        run: |
+          curl -L -o ${{ env.CONAN_CACHE_FILENAME }} https://github.com/acolwell/natron_conan_env/releases/download/conan_cache/${{ env.CONAN_CACHE_FILENAME }}
+          conan cache restore ${{ env.CONAN_CACHE_FILENAME }}
+
       - name: Export recipes
         run: |
           python scripts/exportRecipes.py ${{ github.workspace }}
@@ -67,6 +75,7 @@ jobs:
 
     env:
       CONAN_BUILD_WORKSPACE: 'D:/cbw'
+      CONAN_CACHE_FILENAME: 'conan-cache-save_windows-latest.tgz'
 
     steps:
       - name: Checkout branch
@@ -87,6 +96,11 @@ jobs:
       - name: Install conan config
         run: |
           conan config install -t dir config
+
+      - name: Restore conan cache
+        run: |
+          curl -L -o ${{ env.CONAN_CACHE_FILENAME }} https://github.com/acolwell/natron_conan_env/releases/download/conan_cache/${{ env.CONAN_CACHE_FILENAME }}
+          conan cache restore ${{ env.CONAN_CACHE_FILENAME }}
 
       - name: Export recipes
         run: |
