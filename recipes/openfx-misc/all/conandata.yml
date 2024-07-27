@@ -9,3 +9,4 @@ sources:
 patches:
   "master":
     - patch_file: "patches/install_pluginpath.patch"
+    - patch_file: "patches/macos_build_fixes.patch"
