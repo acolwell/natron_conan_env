@@ -115,3 +115,52 @@ jobs:
         run: |
           cd recipes/natron/all
           conan create -pr:a msvc_profile . --version=conan_build --build=missing
+
+  macos_test:
+    name: Test MacOS (x86_64)
+    runs-on: macos-12
+
+    env:
+      CONAN_CACHE_FILENAME: 'conan-cache-save_macos-12.tgz'
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4.1.1
+        with:
+          submodules: recursive
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip' # caching pip dependencies
+
+      - name: Install Pip requirements
+        run: |
+          pip install -r .github/workflows/requirements.txt
+
+      - name: Install conan config
+        run: |
+          conan config install -t dir config
+
+      - name: Restore conan cache
+        run: |
+          if curl -f -L -o ${{ env.CONAN_CACHE_FILENAME }} https://github.com/acolwell/natron_conan_env/releases/download/conan_cache/${{ env.CONAN_CACHE_FILENAME }}; then
+            conan cache restore ${{ env.CONAN_CACHE_FILENAME }}
+          else
+            echo "Failed to download cache file : ${{ env.CONAN_CACHE_FILENAME }}"
+          fi
+
+      - name: Export recipes
+        run: |
+          python scripts/exportRecipes.py ${{ github.workspace }}
+
+      - name: Build openfx-misc
+        run: |
+          cd recipes/openfx-misc/all
+          conan create -pr:a macos_default . --version=master --build=missing
+
+      - name: Build Natron
+        run: |
+          cd recipes/natron/all
+          conan create -pr:a macos_default . --version=conan_build --build=missing
