@@ -28,6 +28,7 @@ class natronRecipe(ConanFile):
         self.requires("boost/1.84.0")
         self.requires("cairo/1.18.0")
         self.requires("qt/5.15.14")
+        self.requires("pyside2/5.15.14")
         self.requires("glog/0.6.0")
         self.requires("ceres-solver/1.14.0")
         self.requires("cpython/3.12.2")

@@ -1,0 +1,7 @@
+sources:
+  "5.15.14":
+    url: "https://download.qt.io/official_releases/QtForPython/pyside2/"
+
+patches:
+  "5.15.14":
+    - patch_file: "patches/5.15.14-fixes.patch"
