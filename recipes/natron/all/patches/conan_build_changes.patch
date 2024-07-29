@@ -1,8 +1,8 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 13c18c1..2293e6c 100644
+index 13c18c1..d50f653 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -57,24 +57,24 @@ endif()
+@@ -57,24 +57,25 @@ endif()
  find_package(Python3 COMPONENTS Interpreter Development)
  find_package(Qt5 5.15 CONFIG REQUIRED COMPONENTS Core Gui Network Widgets Concurrent)
  
@@ -15,7 +15,7 @@ index 13c18c1..2293e6c 100644
 -find_package(Shiboken2 5.15 CONFIG REQUIRED COMPONENTS libshiboken2 shiboken2)
 +#    set(SHIBOKEN_PYTHON_LIBRARIES ${Python3_LIBRARIES})
 +#endif()
-+#find_package(Shiboken2 5.15 CONFIG REQUIRED COMPONENTS libshiboken2 shiboken2)
++find_package(shiboken2 5.15 REQUIRED COMPONENTS libshiboken2 shiboken2)
  
 -if(IS_DEBUG_BUILD AND WIN32)
 +#if(IS_DEBUG_BUILD AND WIN32)
@@ -30,16 +30,17 @@ index 13c18c1..2293e6c 100644
 +#endif()
  
 -find_package(PySide2 5.15 CONFIG REQUIRED COMPONENTS pyside2)
-+#find_package(PySide2 5.15 CONFIG REQUIRED COMPONENTS pyside2)
++find_package(pyside2 5.15 CONFIG REQUIRED COMPONENTS libpyside2)
  set(QT_VERSION_MAJOR 5)
 -get_target_property(PYSIDE_INCLUDE_DIRS PySide2::pyside2 INTERFACE_INCLUDE_DIRECTORIES)
 -string(REGEX REPLACE "(.*)QtCore$" "\\1" Qt5_INCLUDE_DIR ${Qt5Core_INCLUDE_DIRS})
 +#get_target_property(PYSIDE_INCLUDE_DIRS PySide2::pyside2 INTERFACE_INCLUDE_DIRECTORIES)
++set(PYSIDE_INCLUDE_DIRS ${pyside2_INCLUDE_DIRS})
 +#string(REGEX REPLACE "(.*)QtCore$" "\\1" Qt5_INCLUDE_DIR ${Qt5Core_INCLUDE_DIRS})
  set(QTCORE_INCLUDE_DIRS ${Qt5_INCLUDE_DIR} ${Qt5Core_INCLUDE_DIRS})
  set(QTGUI_INCLUDE_DIRS ${Qt5Gui_INCLUDE_DIRS})
  set(QTWIDGETS_INCLUDE_DIRS ${Qt5Widgets_INCLUDE_DIRS})
-@@ -104,9 +104,10 @@ if(UNIX AND NOT APPLE)
+@@ -104,7 +105,7 @@ if(UNIX AND NOT APPLE)
      find_package(ECM NO_MODULE)
      set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${CMAKE_MODULE_PATH})
      find_package(X11 REQUIRED)
@@ -47,44 +48,12 @@ index 13c18c1..2293e6c 100644
 +    find_package(wayland COMPONENTS client egl)
  elseif(APPLE)
      enable_language(OBJCXX)
-+    find_package(OPENGL)
  elseif(WIN32)
-     enable_language(RC)
-     add_compile_definitions(WINDOWS WIN32 _UNICODE UNICODE NOMINMAX QHTTP_SERVER_STATIC)
-diff --git a/Engine/AppManager.cpp b/Engine/AppManager.cpp
-index 8712eec..c7c58e4 100644
---- a/Engine/AppManager.cpp
-+++ b/Engine/AppManager.cpp
-@@ -139,7 +139,8 @@
- #include "Engine/ViewerInstance.h" // RenderStatsMap
- #include "Engine/WriteNode.h"
- 
--#include "sbkversion.h" // shiboken/pyside version
-+#define SHIBOKEN_VERSION "5.15.13"
-+//#include "sbkversion.h" // shiboken/pyside version
- 
- #include "AppManagerPrivate.h" // include breakpad after Engine, because it includes /usr/include/AssertMacros.h on OS X which defines a check(x) macro, which conflicts with boost
- 
-@@ -3051,10 +3052,10 @@ PyObject* PyInit_NatronEngine();
- void
- AppManager::initBuiltinPythonModules()
- {
--    int ret = PyImport_AppendInittab(NATRON_ENGINE_PYTHON_MODULE_NAME, &PyInit_NatronEngine);
--    if (ret == -1) {
--        throw std::runtime_error("Failed to initialize built-in Python module.");
--    }
-+    //int ret = PyImport_AppendInittab(NATRON_ENGINE_PYTHON_MODULE_NAME, &PyInit_NatronEngine);
-+    //if (ret == -1) {
-+    //    throw std::runtime_error("Failed to initialize built-in Python module.");
-+    //}
- }
- 
- void
 diff --git a/Engine/CMakeLists.txt b/Engine/CMakeLists.txt
-index bd9eebd..f7198e4 100644
+index bd9eebd..f9dae3a 100644
 --- a/Engine/CMakeLists.txt
 +++ b/Engine/CMakeLists.txt
-@@ -17,9 +17,8 @@
+@@ -17,15 +17,19 @@
  # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  # ***** END LICENSE BLOCK *****
  
@@ -96,83 +65,112 @@ index bd9eebd..f7198e4 100644
  
  file(GLOB NatronEngine_HEADERS *.h)
  file(GLOB NatronEngine_SOURCES *.cpp)
-@@ -62,7 +61,7 @@ endif()
  
- list(APPEND NatronEngine_SOURCES
-     ${NatronEngine_SOURCES}
--    ${PyEngine_SOURCES}
-+    #${PyEngine_SOURCES}
-     ../Global/glad_source.c
-     ../Global/FStreamsSupport.cpp
-     ../Global/ProcInfo.cpp
-@@ -76,10 +75,11 @@ target_link_libraries(NatronEngine
++set(tmp_list "${PYSIDE_INCLUDE_DIRS}")
++list(FILTER tmp_list INCLUDE REGEX .*PySide2.*)
++set(PYSIDE_BASE_INCLUDE_DIR ${tmp_list})
++message("PYSIDE_BASE_INCLUDE_DIR : ${PYSIDE_BASE_INCLUDE_DIR}")
++
+ set(PYENGINE_OUT ${CMAKE_CURRENT_BINARY_DIR}/Qt${QT_VERSION_MAJOR})
+-set(PYENGINE_INCLUDE_DIRS ${PYSIDE_INCLUDE_DIRS} ${PYSIDE_INCLUDE_DIRS}/QtCore)
++set(PYENGINE_INCLUDE_DIRS ${PYSIDE_INCLUDE_DIRS} ${PYSIDE_BASE_INCLUDE_DIR}/QtCore)
+ list(APPEND PYENGINE_INCLUDE_DIRS ${QTCORE_INCLUDE_DIRS} ${Python3_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+ list(TRANSFORM PYENGINE_INCLUDE_DIRS PREPEND "-I" OUTPUT_VARIABLE PYENGINE_INCS)
+ set(PYENGINE_HEADER PySide2_Engine_Python.h)
+@@ -40,13 +44,13 @@ set(shiboken_args
+ if(APPLE)
+     list(PREPEND shiboken_args -I${Qt5_DIR}/../../../include)
+  endif()
+- 
++
+ execute_process(COMMAND ${Python3_EXECUTABLE} ../tools/utils/sourceList.py typesystem_engine.xml ${PYENGINE_OUT}
+     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+     OUTPUT_VARIABLE PyEngine_SOURCES)
+ set_property(SOURCE ${PyEngine_SOURCES} PROPERTY SKIP_AUTOGEN ON)
+ add_custom_command(OUTPUT ${PyEngine_SOURCES}
+-    COMMAND Shiboken2::shiboken2 ${shiboken_args}
++    COMMAND shiboken2 ${shiboken_args}
+     COMMAND bash ${POST_SHIBOKEN} ${PYENGINE_OUT}/NatronEngine natronengine
+     DEPENDS ${PYENGINE_HEADER} ${NatronEngine_HEADERS} ${POST_SHIBOKEN} typesystem_engine.xml
+     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+@@ -76,10 +80,10 @@ target_link_libraries(NatronEngine
          HostSupport
          Boost::headers
          Boost::serialization
 -        PkgConfig::Cairo
-+        #PkgConfig::Cairo
 +        cairo::cairo
      PRIVATE
 -        Shiboken2::libshiboken
 -        PySide2::pyside2
-+        #Shiboken2::libshiboken
-+        #PySide2::pyside2
++        shiboken2::libshiboken2
++        pyside2::libpyside2
          Qt5::Core
          Qt5::Concurrent
          Qt5::Network
-@@ -97,6 +97,11 @@ if(WIN32)
-     target_link_libraries(NatronEngine PRIVATE mpr)
- endif()
- 
-+if(APPLE)
-+    target_link_libraries(NatronEngine PRIVATE opengl::opengl)
-+endif()
-+
-+
- target_include_directories(NatronEngine
+@@ -101,7 +105,7 @@ target_include_directories(NatronEngine
      PUBLIC
          ../Global/glad$<IF:$<CONFIG:Debug>,Deb,Rel>/include
+     PRIVATE
+-        ${PYSIDE_INCLUDE_DIRS}/QtCore
++        ${PYSIDE_BASE_INCLUDE_DIR}/QtCore
+         .
+         ..
+         ../Global
 diff --git a/Gui/CMakeLists.txt b/Gui/CMakeLists.txt
-index d20159d..f88a5f3 100644
+index d20159d..4aeb782 100644
 --- a/Gui/CMakeLists.txt
 +++ b/Gui/CMakeLists.txt
-@@ -57,14 +57,14 @@ endif()
+@@ -21,10 +21,15 @@ file(GLOB NatronEngine_HEADERS ../Engine/*.h)
+ file(GLOB NatronGui_HEADERS *.h)
+ file(GLOB NatronGui_SOURCES *.cpp)
  
- list(APPEND NatronGui_SOURCES
-     ${NatronGui_SOURCES}
--    ${PyGui_SOURCES}
-+    #${PyGui_SOURCES}
-     GuiResources.qrc
- )
++set(tmp_list "${PYSIDE_INCLUDE_DIRS}")
++list(FILTER tmp_list INCLUDE REGEX .*PySide2.*)
++set(PYSIDE_BASE_INCLUDE_DIR ${tmp_list})
++message("PYSIDE_BASE_INCLUDE_DIR : ${PYSIDE_BASE_INCLUDE_DIR}")
++
+ set(PYGUI_OUT ${CMAKE_CURRENT_BINARY_DIR}/Qt${QT_VERSION_MAJOR})
+ set(PYGUI_INCLUDE_DIRS . .. ../Engine ../Global ../libs/OpenFX/include)
+-list(APPEND PYGUI_INCLUDE_DIRS ${PYSIDE_INCLUDE_DIRS} ${PYSIDE_INCLUDE_DIRS}/QtCore
+-    ${PYSIDE_INCLUDE_DIRS}/QtGui ${PYSIDE_INCLUDE_DIRS}/QtWidgets)
++list(APPEND PYGUI_INCLUDE_DIRS ${PYSIDE_INCLUDE_DIRS} ${PYSIDE_BASE_INCLUDE_DIR}/QtCore
++    ${PYSIDE_BASE_INCLUDE_DIR}/QtGui ${PYSIDE_BASE_INCLUDE_DIR}/QtWidgets)
+ list(APPEND PYGUI_INCLUDE_DIRS ${QTCORE_INCLUDE_DIRS} ${QTGUI_INCLUDE_DIRS}
+     ${QTWIDGETS_INCLUDE_DIRS} ${Python3_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+ list(TRANSFORM PYGUI_INCLUDE_DIRS PREPEND "-I" OUTPUT_VARIABLE PYGUI_INCS)
+@@ -46,7 +51,7 @@ execute_process(COMMAND ${Python3_EXECUTABLE} ../tools/utils/sourceList.py types
+     OUTPUT_VARIABLE PyGui_SOURCES)
+ set_property(SOURCE ${PyGui_SOURCES} PROPERTY SKIP_AUTOGEN ON)
+ add_custom_command(OUTPUT ${PyGui_SOURCES}
+-    COMMAND Shiboken2::shiboken2 ${shiboken_args}
++    COMMAND shiboken2 ${shiboken_args}
+     COMMAND bash ${POST_SHIBOKEN} ${PYGUI_OUT}/NatronGui natrongui
+     DEPENDS ${PYGUI_HEADER} ${NatronEngine_HEADERS} ${NatronGui_HEADERS} ${POST_SHIBOKEN} typesystem_natronGui.xml
+     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+@@ -63,8 +68,8 @@ list(APPEND NatronGui_SOURCES
  add_library(NatronGui STATIC ${NatronGui_HEADERS} ${NatronGui_SOURCES})
  target_link_libraries(NatronGui
      PUBLIC
 -        Shiboken2::libshiboken
 -        PySide2::pyside2
-+        #Shiboken2::libshiboken
-+        #PySide2::pyside2
++        shiboken2::libshiboken2
++        pyside2::libpyside2
          Qt5::Core
          Qt5::Concurrent
          Qt5::Network
-diff --git a/Gui/GuiApplicationManager10.cpp b/Gui/GuiApplicationManager10.cpp
-index 99bda26..2294b13 100644
---- a/Gui/GuiApplicationManager10.cpp
-+++ b/Gui/GuiApplicationManager10.cpp
-@@ -1149,10 +1149,10 @@ GuiApplicationManager::initBuiltinPythonModules()
- {
-     AppManager::initBuiltinPythonModules();
- 
--    int ret = PyImport_AppendInittab(NATRON_GUI_PYTHON_MODULE_NAME, &PyInit_NatronGui);
--    if (ret == -1) {
--        throw std::runtime_error("Failed to initialize built-in Python module.");
--    }
-+    //int ret = PyImport_AppendInittab(NATRON_GUI_PYTHON_MODULE_NAME, &PyInit_NatronGui);
-+    //if (ret == -1) {
-+    //    throw std::runtime_error("Failed to initialize built-in Python module.");
-+    //}
- }
- 
- void
+@@ -77,9 +82,9 @@ target_link_libraries(NatronGui
+ )
+ target_include_directories(NatronGui
+     PRIVATE
+-        ${PYSIDE_INCLUDE_DIRS}/QtCore
+-        ${PYSIDE_INCLUDE_DIRS}/QtGui
+-        ${PYSIDE_INCLUDE_DIRS}/QtWidgets
++        ${PYSIDE_BASE_INCLUDE_DIR}/QtCore
++        ${PYSIDE_BASE_INCLUDE_DIR}/QtGui
++        ${PYSIDE_BASE_INCLUDE_DIR}/QtWidgets
+         .
+         ..
+         ../Engine
 diff --git a/HostSupport/CMakeLists.txt b/HostSupport/CMakeLists.txt
 index 86d772e..37f0004 100644
 --- a/HostSupport/CMakeLists.txt

@@ -1,0 +1,376 @@
+diff -aru sources/cmake_helpers/helpers.cmake sources/cmake_helpers/helpers.cmake
+--- sources/cmake_helpers/helpers.cmake	2024-07-29 15:00:56.357954462 -0700
++++ sources/cmake_helpers/helpers.cmake	2024-08-02 16:13:26.588770791 -0700
+@@ -47,8 +47,8 @@
+     Charts
+     Svg
+     DataVisualization)
+-find_package(Qt${QT_MAJOR_VERSION}UiTools)
+-if(Qt${QT_MAJOR_VERSION}UiTools_FOUND)
++find_package(Qt${QT_MAJOR_VERSION} COMPONENTS UiTools)
++if(TARGETQt${QT_MAJOR_VERSION}::UiTools)
+     list(APPEND ALL_OPTIONAL_MODULES UiTools)
+ else()
+     set(DISABLE_QtUiTools 1)
+@@ -119,9 +119,11 @@
+ 
+ macro(COLLECT_MODULE_IF_FOUND shortname)
+     set(name "Qt${QT_MAJOR_VERSION}${shortname}")
++    set(_component_name "${shortname}")
+     set(_qt_module_name "${name}")
+     if ("${shortname}" STREQUAL "OpenGLFunctions")
+         set(_qt_module_name "Qt${QT_MAJOR_VERSION}Gui")
++        set(_component_name "Gui")
+     endif()
+     # Determine essential/optional/missing
+     set(module_state "missing")
+@@ -141,7 +143,16 @@
+         set(quiet_argument "QUIET")
+     endif()
+ 
+-    find_package(${_qt_module_name} ${quiet_argument})
++    find_package(Qt${QT_MAJOR_VERSION} COMPONENTS ${_component_name} ${quiet_argument})
++
++    set(${_qt_module_name}_FOUND OFF)
++    if (TARGET Qt${QT_MAJOR_VERSION}::${shortname})
++        set(${_qt_module_name}_FOUND ON)
++        set(${_qt_module_name}_FOUND ON CACHE BOOL "${shortname} found" FORCE)
++    endif()
++
++    set(${_qt_module_name}_VERSION ${Qt${QT_MAJOR_VERSION}_VERSION_STRING} CACHE STRING "${shortname} version")
++
+     # If package is found, _name_found will be equal to 1
+     set(_name_found "${_qt_module_name}_FOUND")
+     # _name_dir will keep the path to the directory where the CMake rules were found
+@@ -173,13 +184,17 @@
+         # record the shortnames for the tests
+         list(APPEND all_module_shortnames ${shortname})
+         # Build Qt 5 compatibility variables
+-        if(${QT_MAJOR_VERSION} GREATER_EQUAL 6)
+-            get_target_property(Qt6${shortname}_INCLUDE_DIRS Qt6::${shortname}
+-                                INTERFACE_INCLUDE_DIRECTORIES)
+-            get_target_property(Qt6${shortname}_PRIVATE_INCLUDE_DIRS
+-                                Qt6::${shortname}Private
++        if(${QT_MAJOR_VERSION} GREATER_EQUAL 5)
++            get_target_property(Qt${QT_MAJOR_VERSION}${shortname}_INCLUDE_DIRS
++                                Qt${QT_MAJOR_VERSION}::${shortname}
+                                 INTERFACE_INCLUDE_DIRECTORIES)
+-            get_target_property(Qt6${shortname}_LIBRARIES Qt6::${shortname}
++            if (TARGET Qt${QT_MAJOR_VERSION}::${shortname}Private)
++                get_target_property(Qt${QT_MAJOR_VERSION}${shortname}_PRIVATE_INCLUDE_DIRS
++                                    Qt${QT_MAJOR_VERSION}::${shortname}Private
++                                    INTERFACE_INCLUDE_DIRECTORIES)
++            endif()
++            get_target_property(Qt${QT_MAJOR_VERSION}${shortname}_LIBRARIES
++                                Qt${QT_MAJOR_VERSION}::${shortname}
+                                 INTERFACE_LINK_LIBRARIES)
+         endif()
+     else()
+diff -aru sources/pyside2/cmake/Macros/FindQt5Extra.cmake sources/pyside2/cmake/Macros/FindQt5Extra.cmake
+--- sources/pyside2/cmake/Macros/FindQt5Extra.cmake	2024-07-29 15:00:56.369954604 -0700
++++ sources/pyside2/cmake/Macros/FindQt5Extra.cmake	2024-08-02 16:13:26.588770791 -0700
+@@ -4,9 +4,9 @@
+ # CT: maybe we can remove this.
+ # For now, I just use the mapping to Qt5
+ 
+-find_package(Qt${QT_MAJOR_VERSION}Multimedia)
++find_package(Qt${QT_MAJOR_VERSION} COMPONENTS Multimedia)
+ 
+-if (NOT Qt${QT_MAJOR_VERSION}Multimedia_FOUND)
++if (NOT TARGET Qt${QT_MAJOR_VERSION}::Multimedia)
+     find_path(QT_QTMULTIMEDIA_INCLUDE_DIR QtMultimedia
+             PATHS ${QT_HEADERS_DIR}/QtMultimedia
+                 ${QT_LIBRARY_DIR}/QtMultimedia.framework/Headers
+diff -aru sources/pyside2/CMakeLists.txt sources/pyside2/CMakeLists.txt
+--- sources/pyside2/CMakeLists.txt	2024-07-29 15:00:56.357954462 -0700
++++ sources/pyside2/CMakeLists.txt	2024-08-02 16:47:00.081783746 -0700
+@@ -17,6 +17,8 @@
+ include(shiboken_helpers)
+ include(helpers)
+ 
++shiboken_find_required_python()
++
+ # Don't display "up-to-date / install" messages when installing, to reduce visual clutter.
+ if (QUIET_BUILD)
+     set(CMAKE_INSTALL_MESSAGE NEVER)
+@@ -79,7 +81,7 @@
+     message(STATUS "******************************************************")
+ endif()
+ 
+-find_package(Qt${QT_MAJOR_VERSION} 5.12 REQUIRED COMPONENTS Core)
++find_package(Qt${QT_MAJOR_VERSION} 5.15 REQUIRED COMPONENTS Core)
+ add_definitions(${Qt${QT_MAJOR_VERSION}Core_DEFINITIONS})
+ 
+ find_file(GL_H "gl.h" PATH_SUFFIXES "GL")
+@@ -118,8 +120,8 @@
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+ 
+ # >= Qt5: QT_INCLUDE_DIR does no longer exist. Derive from QtCore
+-if(${QT_MAJOR_VERSION} GREATER_EQUAL 6)
+-    get_target_property(QT_INCLUDE_DIR Qt6::Core INTERFACE_INCLUDE_DIRECTORIES)
++if(${QT_MAJOR_VERSION} GREATER_EQUAL 5)
++    get_target_property(QT_INCLUDE_DIR Qt${QT_MAJOR_VERSION}::Core INTERFACE_INCLUDE_DIRECTORIES)
+     get_filename_component(QT_INCLUDE_DIR "${QT_INCLUDE_DIR}" DIRECTORY)
+ else()
+     # On Windows, macOS, and Linux it can be computed from Qt5Core_INCLUDE_DIRS, which contains
+@@ -186,7 +188,7 @@
+ endforeach()
+ 
+ 
+-string(REGEX MATCHALL "[0-9]+" qt_version_helper "${Qt${QT_MAJOR_VERSION}Core_VERSION}")
++string(REGEX MATCHALL "[0-9]+" qt_version_helper "${Qt5_VERSION_STRING}")
+ 
+ list(GET qt_version_helper 0 QT_VERSION_MAJOR)
+ list(GET qt_version_helper 1 QT_VERSION_MINOR)
+@@ -252,9 +254,9 @@
+ #####################################################################
+ 
+ add_subdirectory(libpyside)
+-find_package(Qt${QT_MAJOR_VERSION}Designer)
+-if(${QT_MAJOR_VERSION} LESS 6 AND Qt${QT_MAJOR_VERSION}UiTools_FOUND
+-   AND Qt${QT_MAJOR_VERSION}Designer_FOUND)
++find_package(Qt${QT_MAJOR_VERSION} COMPONENTS Designer UiTools)
++if(${QT_MAJOR_VERSION} LESS 6 AND TARGET Qt${QT_MAJOR_VERSION}::UiTools
++   AND TARGET Qt${QT_MAJOR_VERSION}::Designer)
+     add_subdirectory(plugins)
+ endif()
+ 
+diff -aru sources/pyside2/libpyside/CMakeLists.txt sources/pyside2/libpyside/CMakeLists.txt
+--- sources/pyside2/libpyside/CMakeLists.txt	2024-07-29 15:00:56.365954557 -0700
++++ sources/pyside2/libpyside/CMakeLists.txt	2024-08-02 16:13:26.592770836 -0700
+@@ -80,6 +80,10 @@
+ add_library(pyside2 SHARED ${libpyside_SRC} ${other_files})
+ add_library(PySide2::pyside2 ALIAS pyside2)
+ 
++get_target_property(Qt${QT_MAJOR_VERSION}Core_INCLUDE_DIRS Qt${QT_MAJOR_VERSION}::Core INTERFACE_INCLUDE_DIRECTORIES)
++get_target_property(Qt${QT_MAJOR_VERSION}Core_PRIVATE_INCLUDE_DIRS Qt${QT_MAJOR_VERSION}::CorePrivate INTERFACE_INCLUDE_DIRECTORIES)
++get_target_property(Qt${QT_MAJOR_VERSION}_LIBRARIES Qt${QT_MAJOR_VERSION}::Core INTERFACE_LINK_LIBRARIES)
++
+ target_include_directories(pyside2 PRIVATE
+     ${QML_INCLUDES}
+     ${Qt${QT_MAJOR_VERSION}Core_PRIVATE_INCLUDE_DIRS}
+diff -aru sources/pyside2/plugins/CMakeLists.txt sources/pyside2/plugins/CMakeLists.txt
+--- sources/pyside2/plugins/CMakeLists.txt	2024-07-29 15:00:56.397954936 -0700
++++ sources/pyside2/plugins/CMakeLists.txt	2024-08-02 16:13:26.592770836 -0700
+@@ -9,7 +9,16 @@
+     customwidget.h
+     customwidgets.h
+ )
+-include_directories(${Qt${QT_MAJOR_VERSION}Designer_INCLUDE_DIRS})
++
++find_package(Qt${QT_MAJOR_VERSION} COMPONENTS UiTools UiPlugin Designer)
++
++get_target_property(Qt${QT_MAJOR_VERSION}Designer_INCLUDE_DIRS
++                                Qt${QT_MAJOR_VERSION}::Designer
++                                INTERFACE_INCLUDE_DIRECTORIES)
++get_target_property(Qt${QT_MAJOR_VERSION}UiPlugin_INCLUDE_DIRS
++                                Qt${QT_MAJOR_VERSION}::UiPlugin
++                                INTERFACE_INCLUDE_DIRECTORIES)
++include_directories("${Qt${QT_MAJOR_VERSION}_INCLUDE_DIRS}")
+ 
+ if (${QT_MAJOR_VERSION} GREATER_EQUAL 6)
+     qt6_wrap_cpp(MOC_FILES ${ui_plugin_moc})
+@@ -30,7 +39,7 @@
+ endif()
+ 
+ target_link_libraries(uiplugin
+-                      ${Qt${QT_MAJOR_VERSION}UiTools_LIBRARY}
++                      Qt${QT_MAJOR_VERSION}::UiTools
+                       Shiboken2::libshiboken)
+ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+     set(LIBRARY_OUTPUT_SUFFIX ${CMAKE_DEBUG_POSTFIX})
+diff -aru sources/pyside2/PySide2/CMakeLists.txt sources/pyside2/PySide2/CMakeLists.txt
+--- sources/pyside2/PySide2/CMakeLists.txt	2024-07-29 15:00:56.357954462 -0700
++++ sources/pyside2/PySide2/CMakeLists.txt	2024-08-02 16:13:26.592770836 -0700
+@@ -54,6 +54,12 @@
+     if ("${shortname}" STREQUAL "OpenGLFunctions")
+         set(_qt_module_name "Qt${QT_MAJOR_VERSION}Gui")
+     endif()
++
++    set(${_qt_module_name}_FOUND OFF)
++    if (TARGET Qt${QT_MAJOR_VERSION}::${shortname})
++        set(${_qt_module_name}_FOUND ON)
++    endif()
++
+     HAS_QT_MODULE(${_qt_module_name}_FOUND Qt${shortname})
+ 
+     # Create a module header consisting of pyside2_global.h and the module
+diff -aru sources/pyside2/PySide2/QtNetwork/CMakeLists.txt sources/pyside2/PySide2/QtNetwork/CMakeLists.txt
+--- sources/pyside2/PySide2/QtNetwork/CMakeLists.txt	2024-07-29 15:00:56.361954510 -0700
++++ sources/pyside2/PySide2/QtNetwork/CMakeLists.txt	2024-08-02 16:13:26.592770836 -0700
+@@ -47,6 +47,10 @@
+ ${QtNetwork_GEN_DIR}/qtnetwork_module_wrapper.cpp
+ )
+ 
++set_property(TARGET Qt${QT_MAJOR_VERSION}::Network
++             PROPERTY QT_DISABLED_PUBLIC_FEATURES
++             ${QtNetwork_disabled_features})
++
+ get_property(QtNetwork_enabled_features  TARGET Qt${QT_MAJOR_VERSION}::Network
+              PROPERTY QT_ENABLED_PUBLIC_FEATURES)
+ get_property(QtNetwork_disabled_features TARGET Qt${QT_MAJOR_VERSION}::Network
+diff -aru sources/pyside2/PySide2/QtSql/CMakeLists.txt sources/pyside2/PySide2/QtSql/CMakeLists.txt
+--- sources/pyside2/PySide2/QtSql/CMakeLists.txt	2024-07-29 15:00:56.361954510 -0700
++++ sources/pyside2/PySide2/QtSql/CMakeLists.txt	2024-08-02 16:13:26.592770836 -0700
+@@ -20,6 +20,10 @@
+ ${QtSql_GEN_DIR}/qtsql_module_wrapper.cpp
+ )
+ 
++if (TARGET Qt${QT_MAJOR_VERSION}::Widgets)
++    set(Qt${QT_MAJOR_VERSION}Widgets_FOUND 1 CACHE INT "Widgets component was found" FORCE)
++endif()
++
+ configure_file("${QtSql_SOURCE_DIR}/QtSql_global.pre.h.in"
+                "${QtSql_BINARY_DIR}/QtSql_global.pre.h" @ONLY)
+ 
+@@ -47,3 +51,6 @@
+                      DEPS QtSql_deps
+                      TYPESYSTEM_PATH QtSql_SOURCE_DIR
+                      SOURCES QtSql_SRC)
++if (TARGET Qt${QT_MAJOR_VERSION}::Widgets)
++    target_compile_definitions(QtSql PRIVATE QT_WIDGETS_LIB)
++endif()
+diff -aru sources/pyside2-tools/CMakeLists.txt sources/pyside2-tools/CMakeLists.txt
+--- sources/pyside2-tools/CMakeLists.txt	2024-07-29 15:00:56.429955317 -0700
++++ sources/pyside2-tools/CMakeLists.txt	2024-08-02 16:13:26.592770836 -0700
+@@ -9,6 +9,7 @@
+ find_package(Shiboken2 2.0.0 REQUIRED)
+ find_package(Qt5 REQUIRED Core)
+ find_package(PySide2 2.0.0 REQUIRED)
++find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+ 
+ set(pyside2_tools_MAJOR_VERSION "2")
+ set(pyside2_tools_MINOR_VERSION "0")
+@@ -46,7 +47,7 @@
+     set(EXE_EXT "")
+ endif()
+ 
+-set(TOOLS_PATH "${_qt5Core_install_prefix}/bin")
++set(TOOLS_PATH "${qt_PACKAGE_FOLDER_RELEASE}/bin")
+ set(UIC_PATH "${TOOLS_PATH}/uic${EXE_EXT}")
+ set(RCC_PATH "${TOOLS_PATH}/rcc${EXE_EXT}")
+ if (APPLE)
+diff -aru sources/pyside2-tools/pylupdate/CMakeLists.txt sources/pyside2-tools/pylupdate/CMakeLists.txt
+--- sources/pyside2-tools/pylupdate/CMakeLists.txt	2024-07-29 15:00:56.433955364 -0700
++++ sources/pyside2-tools/pylupdate/CMakeLists.txt	2024-08-02 16:13:26.592770836 -0700
+@@ -11,10 +11,7 @@
+ translator.cpp
+ )
+ 
+-find_package(Qt5Core)
+-find_package(Qt5Gui)
+-find_package(Qt5Xml)
+-find_package(Qt5Widgets)
++find_package(Qt${QT_MAJOR_VERSION} COMPONENTS Core Gui Xml Widgets)
+ 
+ set(lupdate_MOC_HEADERS translator.h)
+ qt5_wrap_cpp(lupdate_MOC_OUTFILES ${lupdate_MOC_HEADERS})
+@@ -22,17 +19,11 @@
+ add_executable(pyside2-lupdate ${lupdate_SRC} ${lupdate_MOC_OUTFILES})
+ include_directories(pyside2-lupdate
+                     ${CMAKE_CURRENT_SOURCE_DIR}
+-                    ${Qt5Xml_INCLUDE_DIRS}
+-                    ${Qt5Core_INCLUDE_DIRS}
+-                    ${Qt5Gui_INCLUDE_DIRS}
+-                    ${Qt5Widgets_INCLUDE_DIRS}
++                    ${Qt${QT_MAJOR_VERSION}_INCLUDE_DIR}
+                     )
+ 
+ target_link_libraries(pyside2-lupdate
+-                      ${Qt5Core_LIBRARIES}
+-                      ${Qt5Xml_LIBRARIES}
+-                      ${Qt5Gui_LIBRARIES}
+-                      ${Qt5Widgets_LIBRARIES}
++                      qt::qt
+                       )
+ 
+ install(TARGETS pyside2-lupdate RUNTIME DESTINATION bin)
+diff -aru sources/shiboken2/ApiExtractor/CMakeLists.txt sources/shiboken2/ApiExtractor/CMakeLists.txt
+--- sources/shiboken2/ApiExtractor/CMakeLists.txt	2024-07-29 15:00:56.433955364 -0700
++++ sources/shiboken2/ApiExtractor/CMakeLists.txt	2024-08-02 16:13:26.592770836 -0700
+@@ -32,8 +32,7 @@
+ xmlutils.cpp
+ )
+ 
+-find_package(Qt${QT_MAJOR_VERSION}XmlPatterns 5.12)
+-find_package(Qt${QT_MAJOR_VERSION}Xml 5.12)
++find_package(Qt${QT_MAJOR_VERSION} COMPONENTS Xml XmlPatterns 5.15)
+ find_package(LibXml2 2.6.32)
+ find_package(LibXslt 1.1.19)
+ 
+@@ -42,7 +41,7 @@
+     set(HAS_LIBXSLT 1)
+ endif()
+ 
+-if(NOT Qt${QT_MAJOR_VERSION}XmlPatterns_FOUND AND NOT HAS_LIBXSLT)
++if(NOT Qt${QT_MAJOR_VERSION}XmlPatterns_FOUND AND NOT LibXslt_FOUND)
+     set(DISABLE_DOCSTRINGS TRUE)
+     message(WARNING
+             "Documentation will not be built due to missing dependency (no Qt5XmlPatterns found).")
+@@ -59,13 +58,13 @@
+ target_link_libraries(apiextractor PUBLIC Qt${QT_MAJOR_VERSION}::Core)
+ target_link_libraries(apiextractor PRIVATE ${CLANG_EXTRA_LIBRARIES})
+ 
+-if (HAS_LIBXSLT)
++if (LibXslt_FOUND)
+     target_compile_definitions(apiextractor PUBLIC HAVE_LIBXSLT)
+     target_sources(apiextractor PRIVATE xmlutils_libxslt.cpp)
+     target_include_directories(apiextractor
+-                               PRIVATE ${LIBXSLT_INCLUDE_DIR} ${LIBXML2_INCLUDE_DIR})
++                               PRIVATE ${LibXslt_INCLUDE_DIR} ${LibXml2_INCLUDE_DIR})
+     target_link_libraries(apiextractor
+-                          PRIVATE ${LIBXSLT_LIBRARIES} ${LIBXML2_LIBRARIES})
++                          PRIVATE ${LibXslt_LIBRARIES} ${LibXml2_LIBRARIES})
+ endif()
+ 
+ if (Qt${QT_MAJOR_VERSION}XmlPatterns_FOUND)
+diff -aru sources/shiboken2/CMakeLists.txt sources/shiboken2/CMakeLists.txt
+--- sources/shiboken2/CMakeLists.txt	2024-07-29 15:00:56.433955364 -0700
++++ sources/shiboken2/CMakeLists.txt	2024-08-02 16:13:26.592770836 -0700
+@@ -20,7 +20,7 @@
+ 
+ set (QT_MAJOR_VERSION 5)
+ message(STATUS "Using Qt ${QT_MAJOR_VERSION}")
+-find_package(Qt${QT_MAJOR_VERSION} 5.12 REQUIRED COMPONENTS Core)
++find_package(Qt${QT_MAJOR_VERSION} 5.15 REQUIRED COMPONENTS Core)
+ 
+ if (QUIET_BUILD)
+     set_quiet_build()
+@@ -240,10 +240,10 @@
+                   -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+ 
+ add_subdirectory(libshiboken)
+-add_subdirectory(doc)
++#add_subdirectory(doc)
+ 
+ # deps found, compile the generator.
+-if (Qt${QT_MAJOR_VERSION}Core_FOUND AND PYTHONINTERP_FOUND)
++if (TARGET Qt${QT_MAJOR_VERSION}::Core AND PYTHONINTERP_FOUND)
+     add_subdirectory(generator)
+     add_subdirectory(shibokenmodule)
+ 
+diff -aru sources/shiboken2/data/shiboken_helpers.cmake sources/shiboken2/data/shiboken_helpers.cmake
+--- sources/shiboken2/data/shiboken_helpers.cmake	2024-07-29 15:00:56.437955411 -0700
++++ sources/shiboken2/data/shiboken_helpers.cmake	2024-08-02 16:13:26.592770836 -0700
+@@ -321,11 +321,19 @@
+         # If no version is specified, just use any interpreter that can be found (from PATH).
+         # This is useful for super-project builds, so that the default system interpeter
+         # gets picked up (e.g. /usr/bin/python and not /usr/bin/python2.7).
+-        find_package(PythonInterp REQUIRED)
+-        find_package(PythonLibs REQUIRED)
++        find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+     endif()
+     shiboken_validate_python_version()
+ 
++    set(PYTHON_EXECUTABLE "${Python3_EXECUTABLE}")
++    set(PYTHONLIBS_FOUND ${Python3_Interpreter_FOUND})
++    set(PYTHONINTERP_FOUND ${Python3_Interpreter_FOUND})
++    set(PYTHON_VERSION_MAJOR "${Python3_VERSION_MAJOR}")
++    set(PYTHON_VERSION_MINOR "${Python3_VERSION_MINOR}")
++    set(PYTHON_INCLUDE_DIRS "${Python3_INCLUDE_DIRS}")
++    set(PYTHON_LIBRARIES "${Python3_LIBRARIES}")
++    set(PYTHON_DEBUG_LIBRARIES "${Python3_LIBRARIES}")
++
+     set(SHIBOKEN_PYTHON_INTERPRETER "${PYTHON_EXECUTABLE}")
+     set_property(GLOBAL PROPERTY SHIBOKEN_PYTHON_INTERPRETER "${PYTHON_EXECUTABLE}")
+ endmacro()

@@ -1,0 +1,157 @@
+diff -aru sources/cmake_helpers/helpers.cmake sources/cmake_helpers/helpers.cmake
+--- sources/cmake_helpers/helpers.cmake	2024-08-02 11:35:56.757710693 -0700
++++ sources/cmake_helpers/helpers.cmake	2024-08-02 16:38:27.279533149 -0700
+@@ -47,8 +47,8 @@
+     Charts
+     Svg
+     DataVisualization)
+-find_package(Qt${QT_MAJOR_VERSION}UiTools)
+-if(Qt${QT_MAJOR_VERSION}UiTools_FOUND)
++find_package(Qt${QT_MAJOR_VERSION} COMPONENTS UiTools)
++if(TARGETQt${QT_MAJOR_VERSION}::UiTools)
+     list(APPEND ALL_OPTIONAL_MODULES UiTools)
+ else()
+     set(DISABLE_QtUiTools 1)
+@@ -119,9 +119,11 @@
+ 
+ macro(COLLECT_MODULE_IF_FOUND shortname)
+     set(name "Qt${QT_MAJOR_VERSION}${shortname}")
++    set(_component_name "${shortname}")
+     set(_qt_module_name "${name}")
+     if ("${shortname}" STREQUAL "OpenGLFunctions")
+         set(_qt_module_name "Qt${QT_MAJOR_VERSION}Gui")
++        set(_component_name "Gui")
+     endif()
+     # Determine essential/optional/missing
+     set(module_state "missing")
+@@ -141,7 +143,16 @@
+         set(quiet_argument "QUIET")
+     endif()
+ 
+-    find_package(${_qt_module_name} ${quiet_argument})
++    find_package(Qt${QT_MAJOR_VERSION} COMPONENTS ${_component_name} ${quiet_argument})
++
++    set(${_qt_module_name}_FOUND OFF)
++    if (TARGET Qt${QT_MAJOR_VERSION}::${shortname})
++        set(${_qt_module_name}_FOUND ON)
++        set(${_qt_module_name}_FOUND ON CACHE BOOL "${shortname} found" FORCE)
++    endif()
++
++    set(${_qt_module_name}_VERSION ${Qt${QT_MAJOR_VERSION}_VERSION_STRING} CACHE STRING "${shortname} version")
++
+     # If package is found, _name_found will be equal to 1
+     set(_name_found "${_qt_module_name}_FOUND")
+     # _name_dir will keep the path to the directory where the CMake rules were found
+@@ -173,13 +184,17 @@
+         # record the shortnames for the tests
+         list(APPEND all_module_shortnames ${shortname})
+         # Build Qt 5 compatibility variables
+-        if(${QT_MAJOR_VERSION} GREATER_EQUAL 6)
+-            get_target_property(Qt6${shortname}_INCLUDE_DIRS Qt6::${shortname}
+-                                INTERFACE_INCLUDE_DIRECTORIES)
+-            get_target_property(Qt6${shortname}_PRIVATE_INCLUDE_DIRS
+-                                Qt6::${shortname}Private
++        if(${QT_MAJOR_VERSION} GREATER_EQUAL 5)
++            get_target_property(Qt${QT_MAJOR_VERSION}${shortname}_INCLUDE_DIRS
++                                Qt${QT_MAJOR_VERSION}::${shortname}
+                                 INTERFACE_INCLUDE_DIRECTORIES)
+-            get_target_property(Qt6${shortname}_LIBRARIES Qt6::${shortname}
++            if (TARGET Qt${QT_MAJOR_VERSION}::${shortname}Private)
++                get_target_property(Qt${QT_MAJOR_VERSION}${shortname}_PRIVATE_INCLUDE_DIRS
++                                    Qt${QT_MAJOR_VERSION}::${shortname}Private
++                                    INTERFACE_INCLUDE_DIRECTORIES)
++            endif()
++            get_target_property(Qt${QT_MAJOR_VERSION}${shortname}_LIBRARIES
++                                Qt${QT_MAJOR_VERSION}::${shortname}
+                                 INTERFACE_LINK_LIBRARIES)
+         endif()
+     else()
+diff -aru sources/shiboken2/ApiExtractor/CMakeLists.txt sources/shiboken2/ApiExtractor/CMakeLists.txt
+--- sources/shiboken2/ApiExtractor/CMakeLists.txt	2024-08-02 11:35:57.049704880 -0700
++++ sources/shiboken2/ApiExtractor/CMakeLists.txt	2024-08-02 16:37:37.242881240 -0700
+@@ -32,8 +32,7 @@
+ xmlutils.cpp
+ )
+ 
+-find_package(Qt${QT_MAJOR_VERSION}XmlPatterns 5.12)
+-find_package(Qt${QT_MAJOR_VERSION}Xml 5.12)
++find_package(Qt${QT_MAJOR_VERSION} COMPONENTS Xml XmlPatterns 5.15)
+ find_package(LibXml2 2.6.32)
+ find_package(LibXslt 1.1.19)
+ 
+@@ -42,7 +41,7 @@
+     set(HAS_LIBXSLT 1)
+ endif()
+ 
+-if(NOT Qt${QT_MAJOR_VERSION}XmlPatterns_FOUND AND NOT HAS_LIBXSLT)
++if(NOT Qt${QT_MAJOR_VERSION}XmlPatterns_FOUND AND NOT LibXslt_FOUND)
+     set(DISABLE_DOCSTRINGS TRUE)
+     message(WARNING
+             "Documentation will not be built due to missing dependency (no Qt5XmlPatterns found).")
+@@ -59,13 +58,13 @@
+ target_link_libraries(apiextractor PUBLIC Qt${QT_MAJOR_VERSION}::Core)
+ target_link_libraries(apiextractor PRIVATE ${CLANG_EXTRA_LIBRARIES})
+ 
+-if (HAS_LIBXSLT)
++if (LibXslt_FOUND)
+     target_compile_definitions(apiextractor PUBLIC HAVE_LIBXSLT)
+     target_sources(apiextractor PRIVATE xmlutils_libxslt.cpp)
+     target_include_directories(apiextractor
+-                               PRIVATE ${LIBXSLT_INCLUDE_DIR} ${LIBXML2_INCLUDE_DIR})
++                               PRIVATE ${LibXslt_INCLUDE_DIR} ${LibXml2_INCLUDE_DIR})
+     target_link_libraries(apiextractor
+-                          PRIVATE ${LIBXSLT_LIBRARIES} ${LIBXML2_LIBRARIES})
++                          PRIVATE ${LibXslt_LIBRARIES} ${LibXml2_LIBRARIES})
+ endif()
+ 
+ if (Qt${QT_MAJOR_VERSION}XmlPatterns_FOUND)
+diff -aru sources/shiboken2/CMakeLists.txt sources/shiboken2/CMakeLists.txt
+--- sources/shiboken2/CMakeLists.txt	2024-08-02 11:35:57.049704880 -0700
++++ sources/shiboken2/CMakeLists.txt	2024-08-02 16:37:37.242881240 -0700
+@@ -20,7 +20,7 @@
+ 
+ set (QT_MAJOR_VERSION 5)
+ message(STATUS "Using Qt ${QT_MAJOR_VERSION}")
+-find_package(Qt${QT_MAJOR_VERSION} 5.12 REQUIRED COMPONENTS Core)
++find_package(Qt${QT_MAJOR_VERSION} 5.15 REQUIRED COMPONENTS Core)
+ 
+ if (QUIET_BUILD)
+     set_quiet_build()
+@@ -240,10 +240,10 @@
+                   -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+ 
+ add_subdirectory(libshiboken)
+-add_subdirectory(doc)
++#add_subdirectory(doc)
+ 
+ # deps found, compile the generator.
+-if (Qt${QT_MAJOR_VERSION}Core_FOUND AND PYTHONINTERP_FOUND)
++if (TARGET Qt${QT_MAJOR_VERSION}::Core AND PYTHONINTERP_FOUND)
+     add_subdirectory(generator)
+     add_subdirectory(shibokenmodule)
+ 
+diff -aru sources/shiboken2/data/shiboken_helpers.cmake sources/shiboken2/data/shiboken_helpers.cmake
+--- sources/shiboken2/data/shiboken_helpers.cmake	2024-08-02 11:35:57.065704562 -0700
++++ sources/shiboken2/data/shiboken_helpers.cmake	2024-08-02 16:37:37.242881240 -0700
+@@ -321,11 +321,19 @@
+         # If no version is specified, just use any interpreter that can be found (from PATH).
+         # This is useful for super-project builds, so that the default system interpeter
+         # gets picked up (e.g. /usr/bin/python and not /usr/bin/python2.7).
+-        find_package(PythonInterp REQUIRED)
+-        find_package(PythonLibs REQUIRED)
++        find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+     endif()
+     shiboken_validate_python_version()
+ 
++    set(PYTHON_EXECUTABLE "${Python3_EXECUTABLE}")
++    set(PYTHONLIBS_FOUND ${Python3_Interpreter_FOUND})
++    set(PYTHONINTERP_FOUND ${Python3_Interpreter_FOUND})
++    set(PYTHON_VERSION_MAJOR "${Python3_VERSION_MAJOR}")
++    set(PYTHON_VERSION_MINOR "${Python3_VERSION_MINOR}")
++    set(PYTHON_INCLUDE_DIRS "${Python3_INCLUDE_DIRS}")
++    set(PYTHON_LIBRARIES "${Python3_LIBRARIES}")
++    set(PYTHON_DEBUG_LIBRARIES "${Python3_LIBRARIES}")
++
+     set(SHIBOKEN_PYTHON_INTERPRETER "${PYTHON_EXECUTABLE}")
+     set_property(GLOBAL PROPERTY SHIBOKEN_PYTHON_INTERPRETER "${PYTHON_EXECUTABLE}")
+ endmacro()
