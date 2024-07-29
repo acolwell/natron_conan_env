@@ -4,6 +4,9 @@ from conan.tools.env import Environment
 from conan.tools.scm import Git
 from conan.tools.files import apply_conandata_patches, export_conandata_patches
 
+import os.path
+
+
 class natronRecipe(ConanFile):
     name = "natron"
     package_type = "application"
@@ -23,6 +26,11 @@ class natronRecipe(ConanFile):
         "qt/*:shared": True
     }
 
+    default_build_options = {
+        "cpython/*:shared": True,
+        "qt/*:shared": True,
+    }
+
     def requirements(self):
         self.requires("expat/2.6.2")
         self.requires("boost/1.84.0")
@@ -31,11 +39,15 @@ class natronRecipe(ConanFile):
         self.requires("pyside2/5.15.14")
         self.requires("glog/0.6.0")
         self.requires("ceres-solver/1.14.0")
-        self.requires("cpython/3.12.2")
+        self.requires("cpython/3.10.14")
 
         self.requires("libpng/1.6.43", override=True)
         self.requires("sqlite3/3.45.2", override=True)
         self.requires("fontconfig/2.15.0", override=True)
+
+    def build_requirements(self):
+        self.tool_requires("cpython/<host_version>")
+        self.tool_requires("pyside2/<host_version>")
 
     def export_sources(self):
         export_conandata_patches(self)
@@ -51,12 +63,14 @@ class natronRecipe(ConanFile):
 
     def generate(self):
 
+        env = Environment()
+
         if self.settings.os == "Linux":
             # On Linux we need to add python's libdirs to the library path so we can find libpython3.12.so.1.0
-            env = Environment()
             for libdir in self.dependencies["cpython"].cpp_info.libdirs:
                 env.append_path("LD_LIBRARY_PATH", libdir)
-            env.vars(self).save_script("python_env")
+
+        env.vars(self).save_script("natron_env")
 
         deps = CMakeDeps(self)
         deps.generate()
@@ -64,6 +78,7 @@ class natronRecipe(ConanFile):
         tc.preprocessor_definitions["NATRON_RUN_WITHOUT_PYTHON"] = "1"
         tc.cache_variables["BUILD_USER_NAME"] = ""
         tc.cache_variables["NATRON_SYSTEM_LIBS"] = "ON"
+        tc.cache_variables["PYSIDE_TYPESYSTEMS"] = os.path.join(self.dependencies['pyside2'].package_folder,"share","PySide2","typesystems")
         tc.generate()
 
     def build(self):
@@ -76,4 +91,11 @@ class natronRecipe(ConanFile):
         cmake.install()
 
     def package_info(self):
-        self.cpp_info.requires = ["qt::qt", "cpython::cpython", "expat::expat", "boost::boost", "cairo::cairo", "glog::glog", "ceres-solver::ceres-solver"]
+        # TODO add finer grain components.
+        self.cpp_info.requires = ["qt::qt", "cpython::cpython", "expat::expat", "boost::boost", "cairo::cairo", "glog::glog", "ceres-solver::ceres-solver", "pyside2::libpyside2", "pyside2::libshiboken2"]
+        if self.settings.os == "Linux":
+            # On Linux we need to add pyside libdirs to the library path so we can find libpyside2 and libshiboken2
+            for libdir in self.dependencies["pyside2"].cpp_info.libdirs:
+                self.buildenv_info.append_path("LD_LIBRARY_PATH", libdir)
+                self.runenv_info.append_path("LD_LIBRARY_PATH", libdir)
+

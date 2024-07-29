@@ -1,6 +1,7 @@
 [submodule "modules/conan-center-index"]
 	path = modules/conan-center-index
 	url = https://github.com/acolwell/conan-center-index.git
+	branch = natron_conan_env
 [submodule "modules/openfx"]
 	path = modules/openfx
 	url = https://github.com/AcademySoftwareFoundation/openfx.git

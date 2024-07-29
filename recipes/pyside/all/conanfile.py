@@ -20,28 +20,27 @@ class Pyside2Conanfile(ConanFile):
         "qt/*:shared": True,
         }
 
+    default_build_options = {
+        "cpython/*:shared": True,
+        "qt/*:shared": True,
+        }
+
+
     def build_requirements(self):
-        self.tool_requires("clang/18.1.0")
-        self.tool_requires("llvm/18.1.0")
-        self.tool_requires("cpython/3.12.2")
+        self.tool_requires(f"qt/{self.version}")
+        self.tool_requires("clang/<host_version>")
+        self.tool_requires("cpython/<host_version>")
 
     def requirements(self):
         self.requires(f"qt/{self.version}")
         self.requires("libxml2/2.12.7")
         self.requires("libxslt/1.1.39")
         self.requires("clang/18.1.0")
-        self.requires("cpython/3.12.2")
+        self.requires("cpython/3.10.14")
 
         self.requires("sqlite3/3.45.2", override=True)
+        self.requires("fontconfig/2.15.0", override=True)
 
-    # The build_requirements() method is functionally equivalent to the requirements() one,
-    # being executed just after it. It's a good place to define tool requirements,
-    # dependencies necessary at build time, not at application runtime
-    def build_requirements(self):
-        # Each call to self.tool_requires() will add the corresponding build requirement
-        # Uncommenting this line will add the cmake >=3.15 build dependency to your project
-        # self.requires("cmake/[>=3.15]")
-        pass
 
     def export_sources(self):
         export_conandata_patches(self)
@@ -61,8 +60,14 @@ class Pyside2Conanfile(ConanFile):
     def generate(self):
         env = Environment()
         env.define_path("CLANG_INSTALL_DIR", self.dependencies["clang"].package_folder)
-        env.append_path("PATH", self.dependencies["qt"].cpp_info.bindirs[0])
         env.vars(self).save_script("clang_env")
+
+        if self.settings.os == "Linux":
+            # On Linux we need to add python's libdirs to the library path so we can find libpython3.12.so.1.0
+            env = Environment()
+            for libdir in self.dependencies["cpython"].cpp_info.libdirs:
+                env.append_path("LD_LIBRARY_PATH", libdir)
+            env.vars(self).save_script("python_env")
 
         ms = VirtualBuildEnv(self)
         ms.generate()
@@ -71,8 +76,9 @@ class Pyside2Conanfile(ConanFile):
         tc = CMakeToolchain(self)
         tc.variables["BUILD_TESTS"] = False
         tc.variables["DISABLE_DOCSTRINGS"] = True
+        tc.variables["QtNetwork_disabled_features"] = "sctp"
         tc.generate()
-       
+
     # This method is used to build the source code of the recipe using the desired commands.
     def build(self):
         cmake = CMake(self)
@@ -80,9 +86,29 @@ class Pyside2Conanfile(ConanFile):
         cmake.build()
 
     def package_info(self):
-        self.cpp_info.set_property("cmake_file_name", "PySide2")
-        self.cpp_info.set_property("cmake_target_name", "PySide2::pyside2")
-        self.cpp_info.set_property("cmake_target_aliases", ["pyside2", "shiboken2"])
+        self.cpp_info.requires = ["qt::qt", "libxml2::libxml2", "libxslt::libxslt", "cpython::cpython"]
+
+        self.cpp_info.components["libpyside2"].libs = ["libpyside2.cpython-310-x86_64-linux-gnu.so"]
+        self.cpp_info.components["libpyside2"].libdirs = ["lib"]
+        self.cpp_info.components["libpyside2"].includedirs = ["include/PySide2"]
+
+        self.cpp_info.components["libshiboken2"].libs = ["libshiboken2.cpython-310-x86_64-linux-gnu.so"]
+        self.cpp_info.components["libshiboken2"].libdirs = ["lib"]
+        self.cpp_info.components["libshiboken2"].includedirs = ["include/shiboken2"]
+
+        self.cpp_info.components["shiboken2"].bins = ["shiboken2"]
+        self.cpp_info.components["shiboken2"].bindirs = ["bin"]
+        self.cpp_info.components["shiboken2"].requires = ["clang::clang"]
+
+        if (self.dependencies['clang'].package_folder):
+            self.buildenv_info.define_path("CLANG_INSTALL_DIR", self.dependencies["clang"].package_folder)
+            self.runenv_info.define_path("CLANG_INSTALL_DIR", self.dependencies["clang"].package_folder)
+
+        if self.settings.os == "Linux":
+            # On Linux we need to add clang libdirs to the library path so we can find libclang
+            for libdir in self.dependencies["clang"].cpp_info.libdirs:
+                self.buildenv_info.append_path("LD_LIBRARY_PATH", libdir)
+                self.runenv_info.append_path("LD_LIBRARY_PATH", libdir)
 
     def package(self):
         cmake = CMake(self)
