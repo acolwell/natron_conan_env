@@ -27,7 +27,7 @@ class Pyside2Conanfile(ConanFile):
 
     def requirements(self):
         self.requires(f"qt/{self.version}")
-        self.requires("libxml2/2.12.5")
+        self.requires("libxml2/2.12.7")
         self.requires("libxslt/1.1.39")
         self.requires("clang/18.1.0")
         self.requires("cpython/3.12.2")
@@ -78,6 +78,11 @@ class Pyside2Conanfile(ConanFile):
         cmake = CMake(self)
         cmake.configure()
         cmake.build()
+
+    def package_info(self):
+        self.cpp_info.set_property("cmake_file_name", "PySide2")
+        self.cpp_info.set_property("cmake_target_name", "PySide2::pyside2")
+        self.cpp_info.set_property("cmake_target_aliases", ["pyside2", "shiboken2"])
 
     def package(self):
         cmake = CMake(self)
