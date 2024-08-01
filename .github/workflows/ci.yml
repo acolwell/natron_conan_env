@@ -65,9 +65,27 @@ jobs:
           conan create -pr:a linux_default . --version=master --build=missing
 
       - name: Build Natron
+        id: build-natron
+        continue-on-error: true
         run: |
           cd recipes/natron/all
           conan create -pr:a linux_default . --version=conan_build --build=missing
+
+      - name: Remove unnecessary files from cache
+        run: |
+          conan cache clean '*'
+      - name: Save cache to file
+        run: |
+          conan cache save --file=${{ env.CONAN_CACHE_FILENAME }} '*:*'
+      - name: Upload cache
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name:  ${{ env.CONAN_CACHE_FILENAME }}
+          path:  ${{ env.CONAN_CACHE_FILENAME }}
+
+      - name: Check on failures
+        if: steps.build-natron.outcome != 'success'
+        run: exit 1
 
   win_test:
     name: Test Windows
@@ -112,9 +130,27 @@ jobs:
           conan create -pr:a msvc_profile . --version=master --build=missing
 
       - name: Build Natron
+        id: build-natron
+        continue-on-error: true
         run: |
           cd recipes/natron/all
           conan create -pr:a msvc_profile . --version=conan_build --build=missing
+
+      - name: Remove unnecessary files from cache
+        run: |
+          conan cache clean '*'
+      - name: Save cache to file
+        run: |
+          conan cache save --file=${{ env.CONAN_CACHE_FILENAME }} '*:*'
+      - name: Upload cache
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name:  ${{ env.CONAN_CACHE_FILENAME }}
+          path:  ${{ env.CONAN_CACHE_FILENAME }}
+
+      - name: Check on failures
+        if: steps.build-natron.outcome != 'success'
+        run: exit 1
 
   macos_test:
     name: Test MacOS (x86_64)
@@ -161,6 +197,24 @@ jobs:
           conan create -pr:a macos_default . --version=master --build=missing
 
       - name: Build Natron
+        id: build-natron
+        continue-on-error: true
         run: |
           cd recipes/natron/all
           conan create -pr:a macos_default . --version=conan_build --build=missing
+
+      - name: Remove unnecessary files from cache
+        run: |
+          conan cache clean '*'
+      - name: Save cache to file
+        run: |
+          conan cache save --file=${{ env.CONAN_CACHE_FILENAME }} '*:*'
+      - name: Upload cache
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name:  ${{ env.CONAN_CACHE_FILENAME }}
+          path:  ${{ env.CONAN_CACHE_FILENAME }}
+
+      - name: Check on failures
+        if: steps.build-natron.outcome != 'success'
+        run: exit 1
