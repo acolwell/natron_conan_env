@@ -50,7 +50,7 @@ index 13c18c1..431ecdc 100644
      enable_language(OBJCXX)
  elseif(WIN32)
 diff --git a/Engine/CMakeLists.txt b/Engine/CMakeLists.txt
-index bd9eebd..77511a2 100644
+index bd9eebd..7a02658 100644
 --- a/Engine/CMakeLists.txt
 +++ b/Engine/CMakeLists.txt
 @@ -17,15 +17,19 @@
@@ -77,7 +77,7 @@ index bd9eebd..77511a2 100644
  list(APPEND PYENGINE_INCLUDE_DIRS ${QTCORE_INCLUDE_DIRS} ${Python3_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
  list(TRANSFORM PYENGINE_INCLUDE_DIRS PREPEND "-I" OUTPUT_VARIABLE PYENGINE_INCS)
  set(PYENGINE_HEADER PySide2_Engine_Python.h)
-@@ -40,13 +44,14 @@ set(shiboken_args
+@@ -40,13 +44,13 @@ set(shiboken_args
  if(APPLE)
      list(PREPEND shiboken_args -I${Qt5_DIR}/../../../include)
   endif()
@@ -89,12 +89,11 @@ index bd9eebd..77511a2 100644
  set_property(SOURCE ${PyEngine_SOURCES} PROPERTY SKIP_AUTOGEN ON)
  add_custom_command(OUTPUT ${PyEngine_SOURCES}
 -    COMMAND Shiboken2::shiboken2 ${shiboken_args}
-+    COMMAND export
 +    COMMAND shiboken2 ${shiboken_args}
      COMMAND bash ${POST_SHIBOKEN} ${PYENGINE_OUT}/NatronEngine natronengine
      DEPENDS ${PYENGINE_HEADER} ${NatronEngine_HEADERS} ${POST_SHIBOKEN} typesystem_engine.xml
      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-@@ -76,10 +81,10 @@ target_link_libraries(NatronEngine
+@@ -76,10 +80,10 @@ target_link_libraries(NatronEngine
          HostSupport
          Boost::headers
          Boost::serialization
@@ -108,7 +107,7 @@ index bd9eebd..77511a2 100644
          Qt5::Core
          Qt5::Concurrent
          Qt5::Network
-@@ -101,7 +106,7 @@ target_include_directories(NatronEngine
+@@ -101,7 +105,7 @@ target_include_directories(NatronEngine
      PUBLIC
          ../Global/glad$<IF:$<CONFIG:Debug>,Deb,Rel>/include
      PRIVATE

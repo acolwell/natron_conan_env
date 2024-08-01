@@ -75,7 +75,6 @@ class natronRecipe(ConanFile):
         deps = CMakeDeps(self)
         deps.generate()
         tc = CMakeToolchain(self)
-        tc.preprocessor_definitions["NATRON_RUN_WITHOUT_PYTHON"] = "1"
         tc.cache_variables["BUILD_USER_NAME"] = ""
         tc.cache_variables["NATRON_SYSTEM_LIBS"] = "ON"
         tc.cache_variables["PYSIDE_TYPESYSTEMS"] = os.path.join(self.dependencies['pyside2'].package_folder,"share","PySide2","typesystems")

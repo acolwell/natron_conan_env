@@ -1,7 +1,10 @@
 from conan import ConanFile
+from conan.tools.apple import is_apple_os
 from conan.tools.cmake import CMakeToolchain, CMake, cmake_layout, CMakeDeps
 from conan.tools.env import Environment, VirtualBuildEnv
 from conan.tools.files import apply_conandata_patches, check_sha256, download, export_conandata_patches, unzip
+from conan.tools.microsoft import is_msvc
+from conan.tools.scm import Version
 
 import shutil
 import os
@@ -85,14 +88,62 @@ class Pyside2Conanfile(ConanFile):
         cmake.configure()
         cmake.build()
 
+    @property
+    def _version_suffix(self):
+        v = Version(self.dependencies["cpython"].ref.version)
+        prefix = "cp" if is_msvc(self) else "cpython-"
+        sufffix = ""
+        if is_msvc(self):
+            suffix = "win_amd64"
+        elif self.settings.os == "Linux":
+            suffix = "-x86_64-linux-gnu"
+        elif is_apple_os(self):
+            suffix = "-darwin"
+        #"cpython-310-x86_64-linux-gnu"
+        #"cpython-310-darwin"
+        #"cp310-win_amd64"
+        return f"{prefix}{v.major}{v.minor}{suffix}"
+
+    @property
+    def _abi_suffix(self):
+        res = ""
+        if self.settings.build_type == "Debug":
+            res += "d"
+        return res
+
+    def _get_lib_name(self, base_name):
+        if is_msvc(self):
+            if self.settings.build_type == "Debug":
+                lib_ext = "_d"
+            else:
+                lib_ext = ""
+        else:
+            lib_ext = self._abi_suffix
+         #"pyside2.cpython-310-x86_64-linux-gnu"
+         #"pyside2.cpython-310-darwin"
+         #"pyside2.cp310-win_amd64"
+        return f"{base_name}.{self._version_suffix}{lib_ext}"
+
+    def _get_exact_lib_name(self, base_name):
+        prefix = "" if self.settings.os == "Windows" else "lib"
+        if self.settings.os == "Windows":
+            extension = "lib"
+        #elif not self.options.shared:
+        #    extension = "a"
+        elif is_apple_os(self):
+            extension = "dylib"
+        else:
+            extension = "so"
+        return f"{prefix}{self._get_lib_name(base_name)}.{extension}"
+
     def package_info(self):
         self.cpp_info.requires = ["qt::qt", "libxml2::libxml2", "libxslt::libxslt", "cpython::cpython"]
 
-        self.cpp_info.components["libpyside2"].libs = ["libpyside2.cpython-310-x86_64-linux-gnu.so"]
+        self.cpp_info.components["libpyside2"].libs = [self._get_exact_lib_name("pyside2")]
         self.cpp_info.components["libpyside2"].libdirs = ["lib"]
         self.cpp_info.components["libpyside2"].includedirs = ["include/PySide2"]
 
-        self.cpp_info.components["libshiboken2"].libs = ["libshiboken2.cpython-310-x86_64-linux-gnu.so"]
+        self.cpp_info.components["libshiboken2"].libs = [self._get_exact_lib_name("shiboken2")]
         self.cpp_info.components["libshiboken2"].libdirs = ["lib"]
         self.cpp_info.components["libshiboken2"].includedirs = ["include/shiboken2"]
 
