@@ -19,7 +19,7 @@ def exportRecipes(repo_root_dir):
 		RecipeInfo("recipes/natron/all", "natron", "conan_build"),
 		RecipeInfo("recipes/clang/all", "clang", "18.1.0"),
 		RecipeInfo("recipes/llvm/all", "llvm", "18.1.0"),
-		RecipeInfo("recipes/pyside/all", "llvm", "5.15.14"),
+		RecipeInfo("recipes/pyside2/all", "pyside2", "5.15.14"),
 	]
 
 	for ri in recipe_entries:
