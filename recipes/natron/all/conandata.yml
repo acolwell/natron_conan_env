@@ -14,3 +14,4 @@ sources:
 patches:
   "conan_build":
     - patch_file: "patches/conan_build_changes.patch"
+      fuzz: True
