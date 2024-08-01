@@ -52,7 +52,7 @@ index 13c18c1..2293e6c 100644
      enable_language(RC)
      add_compile_definitions(WINDOWS WIN32 _UNICODE UNICODE NOMINMAX QHTTP_SERVER_STATIC)
 diff --git a/Engine/AppManager.cpp b/Engine/AppManager.cpp
-index 586c5e3..c26c4b1 100644
+index 8712eec..c7c58e4 100644
 --- a/Engine/AppManager.cpp
 +++ b/Engine/AppManager.cpp
 @@ -139,7 +139,8 @@
@@ -65,7 +65,7 @@ index 586c5e3..c26c4b1 100644
  
  #include "AppManagerPrivate.h" // include breakpad after Engine, because it includes /usr/include/AssertMacros.h on OS X which defines a check(x) macro, which conflicts with boost
  
-@@ -3045,10 +3046,10 @@ PyObject* PyInit_NatronEngine();
+@@ -3051,10 +3052,10 @@ PyObject* PyInit_NatronEngine();
  void
  AppManager::initBuiltinPythonModules()
  {
