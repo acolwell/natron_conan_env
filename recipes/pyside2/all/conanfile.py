@@ -8,7 +8,7 @@ from conan.tools.scm import Version
 
 import shutil
 import os
-import subprocess
+from io import StringIO
 
 class Pyside2Conanfile(ConanFile):
     name = "pyside2"
@@ -80,7 +80,10 @@ class Pyside2Conanfile(ConanFile):
         prefix = "" if self.settings.os == "Windows" else "lib"
         python_bin = os.path.join(
             self.dependencies["cpython"].cpp_info.bindirs[0], "python3")
-        suffix = subprocess.check_output([python_bin, "-c", 'import importlib.machinery; print(importlib.machinery.EXTENSION_SUFFIXES[0])']).decode("utf-8").strip()
+        output = StringIO()
+        cmd = f"{python_bin} -c 'import importlib.machinery; print(importlib.machinery.EXTENSION_SUFFIXES[0])'"
+        self.run(cmd, output)
+        suffix = output.getvalue()
         return f"{prefix}{base_name}{suffix}"
 
     def package_info(self):
