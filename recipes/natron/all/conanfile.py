@@ -1,11 +1,12 @@
 from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain, CMake, cmake_layout, CMakeDeps
 from conan.tools.env import Environment
-from conan.tools.scm import Git
-from conan.tools.files import apply_conandata_patches, export_conandata_patches
+from conan.tools.scm import Git, Version
+from conan.tools.files import apply_conandata_patches, export_conandata_patches, copy
 
 import os.path
-
+import fnmatch
+import shutil
 
 class natronRecipe(ConanFile):
     name = "natron"
@@ -31,12 +32,16 @@ class natronRecipe(ConanFile):
         "qt/*:shared": True,
     }
 
+    def build_requirements(self):
+        self.tool_requires("shiboken2/<host_version>")
+
     def requirements(self):
         self.requires("expat/2.6.2")
         self.requires("boost/1.84.0")
         self.requires("cairo/1.18.0")
         self.requires("qt/5.15.14")
         self.requires("pyside2/5.15.14")
+        self.requires("shiboken2/5.15.14")
         self.requires("glog/0.6.0")
         self.requires("ceres-solver/1.14.0")
         self.requires("cpython/3.10.14")
@@ -85,16 +90,67 @@ class natronRecipe(ConanFile):
         cmake.configure()
         cmake.build()
 
+    def _copy_python_module(self, pkg_name, comp_name):
+        py_version = Version(self.dependencies["cpython"].ref.version)
+        py_dir_name = f"python{py_version.major}.{py_version.minor}"
+        dst_dir = os.path.join(self.package_folder, "lib")
+
+        mod = self.dependencies[pkg_name]
+        mod_cpp_info = mod.cpp_info.components[comp_name]
+        mod_pkg_path = os.path.join(mod.package_folder, mod_cpp_info.libdirs[0])
+        python_path = os.path.join(mod_pkg_path, py_dir_name)
+
+        files = []
+        files += copy(self, "*.so", mod_pkg_path, dst_dir)
+        files += copy(self, "*.so.*", mod_pkg_path, dst_dir)
+        files += copy(self, "*.dll", mod_pkg_path, dst_dir)
+        files += copy(self, "*.dynlib", mod_pkg_path, dst_dir)
+        files += copy(self, "*", python_path, os.path.join(dst_dir, py_dir_name))
+        return files
+
     def package(self):
         cmake = CMake(self)
         cmake.install()
 
+        files = []
+
+        files += self._copy_python_module("cpython", "embed")
+        files += self._copy_python_module("shiboken2", "libshiboken2")
+        files += self._copy_python_module("pyside2", "libpyside2")
+
+        deps_lib_dir = os.path.join(self.package_folder, "deps_lib")
+        if not os.path.exists(deps_lib_dir):
+            os.makedirs(deps_lib_dir)
+
+        for dep in self.dependencies.values():
+            if not dep.is_build_context and dep.package_folder and len(dep.cpp_info.libdirs):
+                src_dir = os.path.join(dep.package_folder, dep.cpp_info.libdirs[0])
+                if not os.path.exists(src_dir):
+                    continue
+
+                files += copy(self, "*.so", src_dir, deps_lib_dir)
+                files += copy(self, "*.so.*", src_dir, deps_lib_dir)
+                files += copy(self, "*.dll", src_dir, deps_lib_dir)
+                files += copy(self, "*.dynlib", src_dir, deps_lib_dir)
+                if dep.ref.name == "qt":
+                    # Copy Qt plugins. These need to either be in the "bin" directory
+                    # or in "../plugins" relative to the Qt shared libraries.
+                    files += copy(self, "*", os.path.join(dep.package_folder, "plugins"),
+                        os.path.join(self.package_folder, "bin"))
+
+        print(f"\n\nfiles copied:")
+        for x in files:
+            print(f"\t{x}")
+
     def package_info(self):
         # TODO add finer grain components.
-        self.cpp_info.requires = ["qt::qt", "cpython::cpython", "expat::expat", "boost::boost", "cairo::cairo", "glog::glog", "ceres-solver::ceres-solver", "pyside2::libpyside2", "pyside2::libshiboken2"]
+        self.cpp_info.requires = ["qt::qt", "cpython::cpython", "expat::expat", "boost::boost", "cairo::cairo", "glog::glog", "ceres-solver::ceres-solver", "pyside2::libpyside2", "shiboken2::libshiboken2"]
         if self.settings.os == "Linux":
             # On Linux we need to add pyside libdirs to the library path so we can find libpyside2 and libshiboken2
             for libdir in self.dependencies["pyside2"].cpp_info.libdirs:
+                self.buildenv_info.append_path("LD_LIBRARY_PATH", libdir)
+                self.runenv_info.append_path("LD_LIBRARY_PATH", libdir)
+            for libdir in self.dependencies["shiboken2"].cpp_info.libdirs:
                 self.buildenv_info.append_path("LD_LIBRARY_PATH", libdir)
                 self.runenv_info.append_path("LD_LIBRARY_PATH", libdir)
 
