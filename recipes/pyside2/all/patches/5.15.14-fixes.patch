@@ -1,6 +1,6 @@
 diff -aru sources/cmake_helpers/helpers.cmake sources/cmake_helpers/helpers.cmake
 --- sources/cmake_helpers/helpers.cmake	2024-07-29 15:00:56.357954462 -0700
-+++ sources/cmake_helpers/helpers.cmake	2024-07-31 06:48:07.084044560 -0700
++++ sources/cmake_helpers/helpers.cmake	2024-08-02 16:13:26.588770791 -0700
 @@ -47,8 +47,8 @@
      Charts
      Svg
@@ -68,7 +68,7 @@ diff -aru sources/cmake_helpers/helpers.cmake sources/cmake_helpers/helpers.cmak
      else()
 diff -aru sources/pyside2/cmake/Macros/FindQt5Extra.cmake sources/pyside2/cmake/Macros/FindQt5Extra.cmake
 --- sources/pyside2/cmake/Macros/FindQt5Extra.cmake	2024-07-29 15:00:56.369954604 -0700
-+++ sources/pyside2/cmake/Macros/FindQt5Extra.cmake	2024-07-31 07:02:09.770603456 -0700
++++ sources/pyside2/cmake/Macros/FindQt5Extra.cmake	2024-08-02 16:13:26.588770791 -0700
 @@ -4,9 +4,9 @@
  # CT: maybe we can remove this.
  # For now, I just use the mapping to Qt5
@@ -83,21 +83,17 @@ diff -aru sources/pyside2/cmake/Macros/FindQt5Extra.cmake sources/pyside2/cmake/
                  ${QT_LIBRARY_DIR}/QtMultimedia.framework/Headers
 diff -aru sources/pyside2/CMakeLists.txt sources/pyside2/CMakeLists.txt
 --- sources/pyside2/CMakeLists.txt	2024-07-29 15:00:56.357954462 -0700
-+++ sources/pyside2/CMakeLists.txt	2024-07-31 08:38:15.429770493 -0700
-@@ -17,6 +17,12 @@
++++ sources/pyside2/CMakeLists.txt	2024-08-02 16:47:00.081783746 -0700
+@@ -17,6 +17,8 @@
  include(shiboken_helpers)
  include(helpers)
  
-+if (USE_PYTHON_VERSION)
-+    shiboken_find_required_python(${USE_PYTHON_VERSION})
-+else()
-+    shiboken_find_required_python()
-+endif()
++shiboken_find_required_python()
 +
  # Don't display "up-to-date / install" messages when installing, to reduce visual clutter.
  if (QUIET_BUILD)
      set(CMAKE_INSTALL_MESSAGE NEVER)
-@@ -79,7 +85,7 @@
+@@ -79,7 +81,7 @@
      message(STATUS "******************************************************")
  endif()
  
@@ -106,7 +102,7 @@ diff -aru sources/pyside2/CMakeLists.txt sources/pyside2/CMakeLists.txt
  add_definitions(${Qt${QT_MAJOR_VERSION}Core_DEFINITIONS})
  
  find_file(GL_H "gl.h" PATH_SUFFIXES "GL")
-@@ -118,8 +124,8 @@
+@@ -118,8 +120,8 @@
  set(CMAKE_CXX_STANDARD_REQUIRED ON)
  
  # >= Qt5: QT_INCLUDE_DIR does no longer exist. Derive from QtCore
@@ -117,7 +113,7 @@ diff -aru sources/pyside2/CMakeLists.txt sources/pyside2/CMakeLists.txt
      get_filename_component(QT_INCLUDE_DIR "${QT_INCLUDE_DIR}" DIRECTORY)
  else()
      # On Windows, macOS, and Linux it can be computed from Qt5Core_INCLUDE_DIRS, which contains
-@@ -186,7 +192,7 @@
+@@ -186,7 +188,7 @@
  endforeach()
  
  
@@ -126,7 +122,7 @@ diff -aru sources/pyside2/CMakeLists.txt sources/pyside2/CMakeLists.txt
  
  list(GET qt_version_helper 0 QT_VERSION_MAJOR)
  list(GET qt_version_helper 1 QT_VERSION_MINOR)
-@@ -252,9 +258,9 @@
+@@ -252,9 +254,9 @@
  #####################################################################
  
  add_subdirectory(libpyside)
@@ -141,7 +137,7 @@ diff -aru sources/pyside2/CMakeLists.txt sources/pyside2/CMakeLists.txt
  
 diff -aru sources/pyside2/libpyside/CMakeLists.txt sources/pyside2/libpyside/CMakeLists.txt
 --- sources/pyside2/libpyside/CMakeLists.txt	2024-07-29 15:00:56.365954557 -0700
-+++ sources/pyside2/libpyside/CMakeLists.txt	2024-07-30 10:09:47.481235423 -0700
++++ sources/pyside2/libpyside/CMakeLists.txt	2024-08-02 16:13:26.592770836 -0700
 @@ -80,6 +80,10 @@
  add_library(pyside2 SHARED ${libpyside_SRC} ${other_files})
  add_library(PySide2::pyside2 ALIAS pyside2)
@@ -155,7 +151,7 @@ diff -aru sources/pyside2/libpyside/CMakeLists.txt sources/pyside2/libpyside/CMa
      ${Qt${QT_MAJOR_VERSION}Core_PRIVATE_INCLUDE_DIRS}
 diff -aru sources/pyside2/plugins/CMakeLists.txt sources/pyside2/plugins/CMakeLists.txt
 --- sources/pyside2/plugins/CMakeLists.txt	2024-07-29 15:00:56.397954936 -0700
-+++ sources/pyside2/plugins/CMakeLists.txt	2024-07-30 17:41:20.651805917 -0700
++++ sources/pyside2/plugins/CMakeLists.txt	2024-08-02 16:13:26.592770836 -0700
 @@ -9,7 +9,16 @@
      customwidget.h
      customwidgets.h
@@ -185,7 +181,7 @@ diff -aru sources/pyside2/plugins/CMakeLists.txt sources/pyside2/plugins/CMakeLi
      set(LIBRARY_OUTPUT_SUFFIX ${CMAKE_DEBUG_POSTFIX})
 diff -aru sources/pyside2/PySide2/CMakeLists.txt sources/pyside2/PySide2/CMakeLists.txt
 --- sources/pyside2/PySide2/CMakeLists.txt	2024-07-29 15:00:56.357954462 -0700
-+++ sources/pyside2/PySide2/CMakeLists.txt	2024-07-31 10:24:43.346878711 -0700
++++ sources/pyside2/PySide2/CMakeLists.txt	2024-08-02 16:13:26.592770836 -0700
 @@ -54,6 +54,12 @@
      if ("${shortname}" STREQUAL "OpenGLFunctions")
          set(_qt_module_name "Qt${QT_MAJOR_VERSION}Gui")
@@ -201,7 +197,7 @@ diff -aru sources/pyside2/PySide2/CMakeLists.txt sources/pyside2/PySide2/CMakeLi
      # Create a module header consisting of pyside2_global.h and the module
 diff -aru sources/pyside2/PySide2/QtNetwork/CMakeLists.txt sources/pyside2/PySide2/QtNetwork/CMakeLists.txt
 --- sources/pyside2/PySide2/QtNetwork/CMakeLists.txt	2024-07-29 15:00:56.361954510 -0700
-+++ sources/pyside2/PySide2/QtNetwork/CMakeLists.txt	2024-07-30 17:23:33.829496437 -0700
++++ sources/pyside2/PySide2/QtNetwork/CMakeLists.txt	2024-08-02 16:13:26.592770836 -0700
 @@ -47,6 +47,10 @@
  ${QtNetwork_GEN_DIR}/qtnetwork_module_wrapper.cpp
  )
@@ -215,7 +211,7 @@ diff -aru sources/pyside2/PySide2/QtNetwork/CMakeLists.txt sources/pyside2/PySid
  get_property(QtNetwork_disabled_features TARGET Qt${QT_MAJOR_VERSION}::Network
 diff -aru sources/pyside2/PySide2/QtSql/CMakeLists.txt sources/pyside2/PySide2/QtSql/CMakeLists.txt
 --- sources/pyside2/PySide2/QtSql/CMakeLists.txt	2024-07-29 15:00:56.361954510 -0700
-+++ sources/pyside2/PySide2/QtSql/CMakeLists.txt	2024-07-31 13:10:22.240261511 -0700
++++ sources/pyside2/PySide2/QtSql/CMakeLists.txt	2024-08-02 16:13:26.592770836 -0700
 @@ -20,6 +20,10 @@
  ${QtSql_GEN_DIR}/qtsql_module_wrapper.cpp
  )
@@ -234,10 +230,9 @@ diff -aru sources/pyside2/PySide2/QtSql/CMakeLists.txt sources/pyside2/PySide2/Q
 +if (TARGET Qt${QT_MAJOR_VERSION}::Widgets)
 +    target_compile_definitions(QtSql PRIVATE QT_WIDGETS_LIB)
 +endif()
-\ No newline at end of file
 diff -aru sources/pyside2-tools/CMakeLists.txt sources/pyside2-tools/CMakeLists.txt
 --- sources/pyside2-tools/CMakeLists.txt	2024-07-29 15:00:56.429955317 -0700
-+++ sources/pyside2-tools/CMakeLists.txt	2024-07-31 07:09:23.151865381 -0700
++++ sources/pyside2-tools/CMakeLists.txt	2024-08-02 16:13:26.592770836 -0700
 @@ -9,6 +9,7 @@
  find_package(Shiboken2 2.0.0 REQUIRED)
  find_package(Qt5 REQUIRED Core)
@@ -257,7 +252,7 @@ diff -aru sources/pyside2-tools/CMakeLists.txt sources/pyside2-tools/CMakeLists.
  if (APPLE)
 diff -aru sources/pyside2-tools/pylupdate/CMakeLists.txt sources/pyside2-tools/pylupdate/CMakeLists.txt
 --- sources/pyside2-tools/pylupdate/CMakeLists.txt	2024-07-29 15:00:56.433955364 -0700
-+++ sources/pyside2-tools/pylupdate/CMakeLists.txt	2024-07-29 15:01:17.566206257 -0700
++++ sources/pyside2-tools/pylupdate/CMakeLists.txt	2024-08-02 16:13:26.592770836 -0700
 @@ -11,10 +11,7 @@
  translator.cpp
  )
@@ -292,7 +287,7 @@ diff -aru sources/pyside2-tools/pylupdate/CMakeLists.txt sources/pyside2-tools/p
  install(TARGETS pyside2-lupdate RUNTIME DESTINATION bin)
 diff -aru sources/shiboken2/ApiExtractor/CMakeLists.txt sources/shiboken2/ApiExtractor/CMakeLists.txt
 --- sources/shiboken2/ApiExtractor/CMakeLists.txt	2024-07-29 15:00:56.433955364 -0700
-+++ sources/shiboken2/ApiExtractor/CMakeLists.txt	2024-07-29 15:01:17.566206257 -0700
++++ sources/shiboken2/ApiExtractor/CMakeLists.txt	2024-08-02 16:13:26.592770836 -0700
 @@ -32,8 +32,7 @@
  xmlutils.cpp
  )
@@ -331,7 +326,7 @@ diff -aru sources/shiboken2/ApiExtractor/CMakeLists.txt sources/shiboken2/ApiExt
  if (Qt${QT_MAJOR_VERSION}XmlPatterns_FOUND)
 diff -aru sources/shiboken2/CMakeLists.txt sources/shiboken2/CMakeLists.txt
 --- sources/shiboken2/CMakeLists.txt	2024-07-29 15:00:56.433955364 -0700
-+++ sources/shiboken2/CMakeLists.txt	2024-07-31 08:56:54.015091636 -0700
++++ sources/shiboken2/CMakeLists.txt	2024-08-02 16:13:26.592770836 -0700
 @@ -20,7 +20,7 @@
  
  set (QT_MAJOR_VERSION 5)
@@ -356,7 +351,7 @@ diff -aru sources/shiboken2/CMakeLists.txt sources/shiboken2/CMakeLists.txt
  
 diff -aru sources/shiboken2/data/shiboken_helpers.cmake sources/shiboken2/data/shiboken_helpers.cmake
 --- sources/shiboken2/data/shiboken_helpers.cmake	2024-07-29 15:00:56.437955411 -0700
-+++ sources/shiboken2/data/shiboken_helpers.cmake	2024-07-31 09:00:29.549503532 -0700
++++ sources/shiboken2/data/shiboken_helpers.cmake	2024-08-02 16:13:26.592770836 -0700
 @@ -321,11 +321,19 @@
          # If no version is specified, just use any interpreter that can be found (from PATH).
          # This is useful for super-project builds, so that the default system interpeter
