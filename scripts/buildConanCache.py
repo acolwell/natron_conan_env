@@ -5,7 +5,7 @@ import sys
 import platform
 
 from natron_conan_env import RecipeInfo
-from exportRecipes import exportRecipes
+from exportRecipes import exportRecipes, export_recipe_entries
 
 def main(argv):
 	if (len(argv) < 2):
@@ -25,6 +25,9 @@ def main(argv):
 	elif platform.system() == "Linux":
 		profile = "linux_default"
 		output_filename = "conan-cache-save_ubuntu-latest.tgz"
+	elif platform.system() == "Darwin":
+		profile = "macos_default"
+		output_filename = "conan-cache-save_macos-12.tgz"
 	else:
 		print(f"Unexpected platform {platform.system()}")
 		exit(1)
@@ -32,27 +35,35 @@ def main(argv):
 	print("Profile:", profile)
 	print("OutputFilename:", output_filename)
 
-	recipe_entries = [
-		RecipeInfo("recipes/openfx-misc/all", "openfx-misc", "master"),
-		RecipeInfo("recipes/natron/all", "natron", "conan_build"),
-	]
+	recipes_to_build = ["cpython", "qt", "llvm", "clang", "cairo"]
 
-	print("\nRemoving all packages...")
-	subprocess.run(["conan", "remove", "-c", "*"], cwd=repo_root_dir)
+	recipe_map = {}
+	for ri in export_recipe_entries:
+		recipe_map[ri.name] = ri
+
+	#print("\nRemoving all previous versions of packages being built...")
+	#for recipe_name in recipes_to_build:
+	#	ri = recipe_map[recipe_name]
+	#	subprocess.run(["conan", "remove", "-c", f"{ri.name}*"], cwd=repo_root_dir)
 
 	print("\nExporting recipes...")
 	exportRecipes(repo_root_dir)
 
-	for ri in recipe_entries:
+	for recipe_name in recipes_to_build:
+		ri = recipe_map[recipe_name]
+
 		print(f"\nBuilding and installing dependencies for {ri.path}")
-		subprocess.run(["conan", "create", f"-pr:a={profile}", f"--version={ri.version}", "--build=missing", ".", ],
-			cwd=os.path.join(repo_root_dir, ri.path))
+		create_cmd = ["conan", "create", f"-pr:a={profile}", f"--version={ri.version}", "--build=missing"]
+		for eo in ri.extra_options:
+			create_cmd.extend(["-o", eo])
+		create_cmd.append(".")
+		subprocess.run(create_cmd, cwd=os.path.join(repo_root_dir, ri.path))
 
 		print(f"\nRemoving {ri.name}/{ri.version}")
 		subprocess.run(["conan", "remove", "-c", f"{ri.name}/{ri.version}:*"], cwd=repo_root_dir)
 
-	print("\nCleaning cache...")
-	subprocess.run(["conan", "cache", "clean", "*"], cwd=repo_root_dir)
+		print("\nCleaning cache...")
+		subprocess.run(["conan", "cache", "clean", "*"], cwd=repo_root_dir)
 
 	print(f"\nSaving cache to {output_filename}...")
 	subprocess.run(["conan", "cache", "save", f"--file={output_filename}", "*:*"])
