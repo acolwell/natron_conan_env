@@ -59,9 +59,6 @@ def main(argv):
 		create_cmd.append(".")
 		subprocess.run(create_cmd, cwd=os.path.join(repo_root_dir, ri.path))
 
-		print(f"\nRemoving {ri.name}/{ri.version}")
-		subprocess.run(["conan", "remove", "-c", f"{ri.name}/{ri.version}:*"], cwd=repo_root_dir)
-
 		print("\nCleaning cache...")
 		subprocess.run(["conan", "cache", "clean", "*"], cwd=repo_root_dir)
 
