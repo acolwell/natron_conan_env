@@ -4,8 +4,8 @@ import subprocess
 import sys
 import platform
 
-from natron_conan_env import RecipeInfo
-from exportRecipes import exportRecipes, export_recipe_entries
+from natron_conan_env import export_recipe_entries
+from exportRecipes import exportRecipes
 
 def main(argv):
 	if (len(argv) < 2):

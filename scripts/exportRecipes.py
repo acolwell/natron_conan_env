@@ -4,7 +4,7 @@ import os.path
 import subprocess
 import sys
 
-from natron_conan_env import RecipeInfo, export_recipe_entries
+from natron_conan_env import export_recipe_entries
 
 def exportRecipes(repo_root_dir):
 	if not os.path.isdir(repo_root_dir):
