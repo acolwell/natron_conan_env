@@ -4,24 +4,14 @@ import os.path
 import subprocess
 import sys
 
-from natron_conan_env import RecipeInfo
+from natron_conan_env import export_recipe_entries
 
 def exportRecipes(repo_root_dir):
 	if not os.path.isdir(repo_root_dir):
 		print("{} is not a directory.".format(repo_root_dir))
 		return 1
 
-
-	recipe_entries = [
-		RecipeInfo("modules/openfx", "openfx", "1.4.0"),
-		RecipeInfo("recipes/openfx-misc/all", "openfx-misc", "master"),
-		RecipeInfo("recipes/openfx-plugin-tools/all", "openfx-plugin-tools", "0.1"),
-		RecipeInfo("recipes/natron/all", "natron", "conan_build"),
-		RecipeInfo("recipes/clang/all", "clang", "18.1.0"),
-		RecipeInfo("recipes/llvm/all", "llvm", "18.1.0")
-	]
-
-	for ri in recipe_entries:
+	for ri in export_recipe_entries:
 		print(f"\nExporting {ri.path}")
 		subprocess.run(["conan", "export", ".", "--version={}".format(ri.version)],
 			cwd=os.path.join(repo_root_dir, ri.path))

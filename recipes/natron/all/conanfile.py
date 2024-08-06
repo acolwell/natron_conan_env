@@ -30,7 +30,7 @@ class natronRecipe(ConanFile):
         self.requires("qt/5.15.14")
         self.requires("glog/0.6.0")
         self.requires("ceres-solver/1.14.0")
-        self.requires("cpython/3.12.2")
+        self.requires("cpython/3.10.14")
 
         self.requires("libpng/1.6.43", override=True)
         self.requires("sqlite3/3.45.2", override=True)
