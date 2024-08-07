@@ -52,7 +52,7 @@ index 13c18c1..2293e6c 100644
      enable_language(RC)
      add_compile_definitions(WINDOWS WIN32 _UNICODE UNICODE NOMINMAX QHTTP_SERVER_STATIC)
 diff --git a/Engine/AppManager.cpp b/Engine/AppManager.cpp
-index 8712eec..c7c58e4 100644
+index 8712eec..67e62cf 100644
 --- a/Engine/AppManager.cpp
 +++ b/Engine/AppManager.cpp
 @@ -139,7 +139,8 @@
@@ -65,7 +65,23 @@ index 8712eec..c7c58e4 100644
  
  #include "AppManagerPrivate.h" // include breakpad after Engine, because it includes /usr/include/AssertMacros.h on OS X which defines a check(x) macro, which conflicts with boost
  
-@@ -3051,10 +3052,10 @@ PyObject* PyInit_NatronEngine();
+@@ -743,6 +744,7 @@ AppManager::loadInternal(const CLArgs& cl)
+ 
+     _imp->declareSettingsToPython();
+ 
++#ifndef NATRON_RUN_WITHOUT_PYTHON
+     // executeCommandLineSettingCommands
+     {
+         const std::list<std::string>& commands = cl.getSettingCommands();
+@@ -767,6 +769,7 @@ AppManager::loadInternal(const CLArgs& cl)
+             }
+         }
+     }
++#endif  // NATRON_RUN_WITHOUT_PYTHON
+ 
+     ///basically show a splashScreen load fonts etc...
+     return initGui(cl);
+@@ -3051,10 +3054,10 @@ PyObject* PyInit_NatronEngine();
  void
  AppManager::initBuiltinPythonModules()
  {
@@ -132,6 +148,21 @@ index bd9eebd..f7198e4 100644
  target_include_directories(NatronEngine
      PUBLIC
          ../Global/glad$<IF:$<CONFIG:Debug>,Deb,Rel>/include
+diff --git a/Engine/Knob.cpp b/Engine/Knob.cpp
+index d3fd616..7b55fd5 100644
+--- a/Engine/Knob.cpp
++++ b/Engine/Knob.cpp
+@@ -2947,7 +2947,10 @@ void
+ KnobHelper::clearExpression(int dimension,
+                             bool clearResults)
+ {
++#ifndef NATRON_RUN_WITHOUT_PYTHON
+     PythonGILLocker pgl;
++#endif
++
+     bool hadExpression;
+     {
+         QMutexLocker k(&_imp->expressionMutex);
 diff --git a/Gui/CMakeLists.txt b/Gui/CMakeLists.txt
 index d20159d..f88a5f3 100644
 --- a/Gui/CMakeLists.txt
