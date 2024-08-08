@@ -54,6 +54,7 @@ jobs:
         run: |
           curl -L -o ${{ env.CONAN_CACHE_FILENAME }} https://github.com/acolwell/natron_conan_env/releases/download/conan_cache/${{ env.CONAN_CACHE_FILENAME }}
           conan cache restore ${{ env.CONAN_CACHE_FILENAME }}
+          rm ${{ env.CONAN_CACHE_FILENAME }}
 
       - name: Export recipes
         run: |
@@ -101,6 +102,7 @@ jobs:
         run: |
           curl -L -o ${{ env.CONAN_CACHE_FILENAME }} https://github.com/acolwell/natron_conan_env/releases/download/conan_cache/${{ env.CONAN_CACHE_FILENAME }}
           conan cache restore ${{ env.CONAN_CACHE_FILENAME }}
+          Remove-Item ${{ env.CONAN_CACHE_FILENAME }}
 
       - name: Export recipes
         run: |
@@ -147,6 +149,7 @@ jobs:
         run: |
           if curl -f -L -o ${{ env.CONAN_CACHE_FILENAME }} https://github.com/acolwell/natron_conan_env/releases/download/conan_cache/${{ env.CONAN_CACHE_FILENAME }}; then
             conan cache restore ${{ env.CONAN_CACHE_FILENAME }}
+            rm ${{ env.CONAN_CACHE_FILENAME }}
           else
             echo "Failed to download cache file : ${{ env.CONAN_CACHE_FILENAME }}"
           fi

@@ -32,10 +32,6 @@ class natronRecipe(ConanFile):
         self.requires("ceres-solver/1.14.0")
         self.requires("cpython/3.10.14")
 
-        self.requires("libpng/1.6.43", override=True)
-        self.requires("sqlite3/3.45.2", override=True)
-        self.requires("fontconfig/2.15.0", override=True)
-
     def export_sources(self):
         export_conandata_patches(self)
 
