@@ -8,6 +8,7 @@ import os.path
 import fnmatch
 import re
 import shutil
+import subprocess
 
 class natronRecipe(ConanFile):
     name = "natron"
@@ -87,7 +88,7 @@ class natronRecipe(ConanFile):
         files += copy(self, "*.so", mod_pkg_path, dst_dir)
         files += copy(self, "*.so.*", mod_pkg_path, dst_dir)
         files += copy(self, "*.dll", mod_pkg_path, dst_dir)
-        files += copy(self, "*.dynlib", mod_pkg_path, dst_dir)
+        files += copy(self, "*.dylib", mod_pkg_path, dst_dir)
         files += copy(self, "*", python_path, os.path.join(dst_dir, py_dir_name))
         return files
 
@@ -103,9 +104,33 @@ class natronRecipe(ConanFile):
                         print(f"Updating RPATH for {binary_path}")
                         cmd = f'patchelf --force-rpath --set-rpath "\\$ORIGIN{current_rpath}" {binary_path}'
                         self.run(cmd)
+                    elif self.settings.os == "Macos" and len(current_rpath) > 0:
+                        file_info = subprocess.check_output(["file", "-b", binary_path])
+                        if file_info.decode("utf-8").find("Mach-O") == 0:
+                            print(f"Updating rpath for {binary_path}")
+                            new_rpath = f"@loader_path{current_rpath}"
+                            #new_rpath="@executable_path/../../../../deps_lib"
+                            cmd = f'install_name_tool -add_rpath "{new_rpath}" {binary_path}'
+                            self.run(cmd)
                 elif os.path.isdir(binary_path) and recurse:
                     next_rpath = "/.." + current_rpath if len(current_rpath) > 0 else ""
                     dirs_left.append((binary_path, next_rpath))
+
+    @property
+    def _deps_lib_dir(self):
+        return os.path.join(self.package_folder, "deps_lib")
+
+    @property
+    def _qt_base_dir(self):
+        return os.path.join(self._deps_lib_dir, "Qt")
+
+    @property
+    def _qt_lib_dir(self):
+        return os.path.join(self._qt_base_dir, "lib")
+
+    @property
+    def _qt_plugins_dir(self):
+        return os.path.join(self._qt_base_dir, "plugins")
 
     def package(self):
         cmake = CMake(self)
@@ -115,9 +140,8 @@ class natronRecipe(ConanFile):
 
         files += self._copy_python_module("cpython", "embed")
 
-        deps_lib_dir = os.path.join(self.package_folder, "deps_lib")
-        if not os.path.exists(deps_lib_dir):
-            os.makedirs(deps_lib_dir)
+        if not os.path.exists(self._deps_lib_dir):
+            os.makedirs(self._deps_lib_dir)
 
         for dep in self.dependencies.values():
             if not dep.is_build_context and dep.package_folder and len(dep.cpp_info.libdirs):
@@ -125,21 +149,27 @@ class natronRecipe(ConanFile):
                 if not os.path.exists(src_dir):
                     continue
 
-                files += copy(self, "*.so", src_dir, deps_lib_dir)
-                files += copy(self, "*.so.*", src_dir, deps_lib_dir)
-                files += copy(self, "*.dll", src_dir, deps_lib_dir)
-                files += copy(self, "*.dynlib", src_dir, deps_lib_dir)
+                dst_dir = self._deps_lib_dir
                 if dep.ref.name == "qt":
-                    # Copy Qt plugins. These need to either be in the "bin" directory
-                    # or in "../plugins" relative to the Qt shared libraries.
+                    dst_dir = self._qt_lib_dir
+                    # Copy Qt plugins. These need to be in "../plugins" relative to the Qt shared libraries.
                     files += copy(self, "*", os.path.join(dep.package_folder, "plugins"),
-                        os.path.join(self.package_folder, "bin"))
+                        self._qt_plugins_dir)
+
+                files += copy(self, "*.so", src_dir, dst_dir)
+                files += copy(self, "*.so.*", src_dir, dst_dir)
+                files += copy(self, "*.dll", src_dir, dst_dir)
+                files += copy(self, "*.dylib", src_dir, dst_dir)
 
         print(f"\n\nfiles copied:")
         for x in files:
             print(f"\t{x}")
 
-        dest_plugins_dir = os.path.join(self.package_folder, "Plugins","OFX", "Natron")
+        ofx_plugins_base_dir = self.package_folder
+        if self.settings.os == "Macos":
+            ofx_plugins_base_dir = os.path.join(ofx_plugins_base_dir, "bin", "Natron.app", "Contents")
+        dest_plugins_dir = os.path.join(ofx_plugins_base_dir, "Plugins","OFX", "Natron")
+
         os.makedirs(dest_plugins_dir)
         plugin_src_base = self.dependencies["openfx-misc"].package_folder
         for x in os.listdir(plugin_src_base):
@@ -147,7 +177,11 @@ class natronRecipe(ConanFile):
                 print(f"Copying {x}")
                 shutil.copytree(os.path.join(plugin_src_base, x), os.path.join(dest_plugins_dir, x))
 
-        self.fix_rpath("bin", "/../deps_lib", recurse=True)
+        # Fix rpaths so binaries can find their dependencies.
+        rel_deps_lib = os.path.relpath(self._deps_lib_dir, os.path.join(self.package_folder, "bin"))
+        rel_qt_lib = os.path.relpath(self._qt_lib_dir, os.path.join(self.package_folder, "bin"))
+        self.fix_rpath("bin", f"/{rel_deps_lib}", recurse=True)
+        self.fix_rpath("bin", f"/{rel_qt_lib}", recurse=True)
         self.fix_rpath("deps_lib", "")
 
     def package_info(self):

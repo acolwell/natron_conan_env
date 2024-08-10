@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 13c18c1..2293e6c 100644
+index 13c18c1..87fedd8 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -57,24 +57,24 @@ endif()
@@ -39,7 +39,21 @@ index 13c18c1..2293e6c 100644
  set(QTCORE_INCLUDE_DIRS ${Qt5_INCLUDE_DIR} ${Qt5Core_INCLUDE_DIRS})
  set(QTGUI_INCLUDE_DIRS ${Qt5Gui_INCLUDE_DIRS})
  set(QTWIDGETS_INCLUDE_DIRS ${Qt5Widgets_INCLUDE_DIRS})
-@@ -104,9 +104,10 @@ if(UNIX AND NOT APPLE)
+@@ -90,9 +90,10 @@ if (MSVC)
+ else()
+     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmissing-prototypes" )
+     add_compile_options(-Wall -Wextra -Wmissing-declarations -Wno-multichar -Winit-self -Wno-long-long
+-                        -Wvla -Wdate-time -Wshift-overflow=2
+-                        -Wduplicated-cond -Wno-stringop-overflow -Wno-format-overflow
+-                        -Wno-deprecated-copy)
++                        -Wvla -Wdate-time -Wno-deprecated-copy)
++    if(UNIX AND NOT APPLE)
++        add_compile_options(-Wshift-overflow=2 -Wduplicated-cond -Wno-stringop-overflow -Wno-format-overflow)
++    endif()
+ endif()
+ 
+ if(NATRON_SYSTEM_LIBS)
+@@ -104,9 +105,10 @@ if(UNIX AND NOT APPLE)
      find_package(ECM NO_MODULE)
      set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${CMAKE_MODULE_PATH})
      find_package(X11 REQUIRED)
