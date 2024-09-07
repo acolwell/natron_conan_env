@@ -112,14 +112,14 @@ class natronRecipe(ConanFile):
                             origin_path = f"/{current_rpath}" if len(current_rpath) > 0 else ""
                             cmd = f'patchelf --force-rpath --set-rpath "\\$ORIGIN{origin_path}" {binary_path}'
                             self.run(cmd)
-                    elif self.settings.os == "Macos" and len(current_rpath) > 0:
+                    elif self.settings.os == "Macos" and len(current_rpath_list) > 0:
                         file_info = subprocess.check_output(["file", "-b", binary_path])
                         if file_info.decode("utf-8").find("Mach-O") == 0:
                             print(f"Updating rpath for {binary_path}")
                             cmd = 'install_name_tool'
                             for current_rpath in current_rpath_list:
                                 new_rpath = f"@loader_path/{current_rpath}"
-                                cmd += ' -add_rpath "{new_rpath}"'
+                                cmd += f' -add_rpath "{new_rpath}"'
                             cmd +=  f" {binary_path}"
                             self.run(cmd)
 
