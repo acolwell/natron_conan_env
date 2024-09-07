@@ -1,11 +1,13 @@
 from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain, CMake, cmake_layout, CMakeDeps
 from conan.tools.env import Environment
-from conan.tools.scm import Git, Version
 from conan.tools.files import apply_conandata_patches, export_conandata_patches, copy
+from conan.tools.microsoft import VCVars
+from conan.tools.scm import Git, Version
 
-import os.path
 import fnmatch
+from io import StringIO
+import os.path
 import re
 import shutil
 import subprocess
@@ -69,6 +71,10 @@ class natronRecipe(ConanFile):
         tc.cache_variables["NATRON_SYSTEM_LIBS"] = "ON"
         tc.generate()
 
+        if self.settings.os == "Windows":
+            ms = VCVars(self)
+            ms.generate()
+
     def build(self):
         cmake = CMake(self)
         cmake.configure()
@@ -82,54 +88,77 @@ class natronRecipe(ConanFile):
         mod = self.dependencies[pkg_name]
         mod_cpp_info = mod.cpp_info.components[comp_name]
         mod_pkg_path = os.path.join(mod.package_folder, mod_cpp_info.libdirs[0])
-        python_path = os.path.join(mod_pkg_path, py_dir_name)
+        python_path = os.path.join(mod.package_folder, "bin", "Lib") if self.settings.os == "Windows" else os.path.join(mod_pkg_path, py_dir_name)
 
         files = []
         files += copy(self, "*.so", mod_pkg_path, dst_dir)
         files += copy(self, "*.so.*", mod_pkg_path, dst_dir)
         files += copy(self, "*.dll", mod_pkg_path, dst_dir)
         files += copy(self, "*.dylib", mod_pkg_path, dst_dir)
-        files += copy(self, "*", python_path, os.path.join(dst_dir, py_dir_name))
+        files += copy(self, "*", python_path, os.path.join(dst_dir, py_dir_name), excludes=("__pycache__", "*.pyc"))
         return files
 
-    def fix_rpath(self, directory, rpath, recurse=False):
+    def fix_rpath(self, directory, rpath_list, recurse=False):
         base_dir = os.path.join(self.package_folder, directory)
-        dirs_left = [(base_dir, rpath)]
+        dirs_left = [(base_dir, rpath_list)]
         while len(dirs_left):
-            (current_dir, current_rpath) = dirs_left.pop(0)
+            (current_dir, current_rpath_list) = dirs_left.pop(0)
             for filename in os.listdir(current_dir):
                 binary_path = os.path.join(current_dir, filename)
                 if os.path.isfile(binary_path):
                     if self.settings.os == "Linux":
                         print(f"Updating RPATH for {binary_path}")
-                        cmd = f'patchelf --force-rpath --set-rpath "\\$ORIGIN{current_rpath}" {binary_path}'
-                        self.run(cmd)
+                        for current_rpath in current_rpath_list:
+                            origin_path = f"/{current_rpath}" if len(current_rpath) > 0 else ""
+                            cmd = f'patchelf --force-rpath --set-rpath "\\$ORIGIN{origin_path}" {binary_path}'
+                            self.run(cmd)
                     elif self.settings.os == "Macos" and len(current_rpath) > 0:
                         file_info = subprocess.check_output(["file", "-b", binary_path])
                         if file_info.decode("utf-8").find("Mach-O") == 0:
                             print(f"Updating rpath for {binary_path}")
-                            new_rpath = f"@loader_path{current_rpath}"
-                            #new_rpath="@executable_path/../../../../deps_lib"
-                            cmd = f'install_name_tool -add_rpath "{new_rpath}" {binary_path}'
+                            cmd = 'install_name_tool'
+                            for current_rpath in current_rpath_list:
+                                new_rpath = f"@loader_path/{current_rpath}"
+                                cmd += ' -add_rpath "{new_rpath}"'
+                            cmd +=  f" {binary_path}"
                             self.run(cmd)
+
                 elif os.path.isdir(binary_path) and recurse:
-                    next_rpath = "/.." + current_rpath if len(current_rpath) > 0 else ""
-                    dirs_left.append((binary_path, next_rpath))
+                    next_rpath_list = []
+                    for x in current_rpath_list:
+                        next_rpath_list.append(os.path.join("..", x))
+                    dirs_left.append((binary_path, next_rpath_list))
 
     @property
     def _deps_lib_dir(self):
+        if self.settings.os == "Windows":
+            # All dependencies need to be in the bin dir next to the executables on Windows
+            # so that we don't have to update PATH environment variable to find them.
+            return os.path.join(self.package_folder, "bin")
+
         return os.path.join(self.package_folder, "deps_lib")
 
     @property
     def _qt_base_dir(self):
+        if self.settings.os == "Windows":
+            return self._deps_lib_dir
+
         return os.path.join(self._deps_lib_dir, "Qt")
 
     @property
     def _qt_lib_dir(self):
+        if self.settings.os == "Windows":
+            # Copy all the Qt libraries into the same directory as the other dependencies.
+            return self._deps_lib_dir
         return os.path.join(self._qt_base_dir, "lib")
 
     @property
     def _qt_plugins_dir(self):
+        if self.settings.os == "Windows":
+            # Qt plugins need to be installed in the same directory as the
+            # executable so that Qt does not try to look for them in bin/../plugins
+            return self._deps_lib_dir
+
         return os.path.join(self._qt_base_dir, "plugins")
 
     def package(self):
@@ -145,7 +174,7 @@ class natronRecipe(ConanFile):
 
         for dep in self.dependencies.values():
             if not dep.is_build_context and dep.package_folder and len(dep.cpp_info.libdirs):
-                src_dir = os.path.join(dep.package_folder, dep.cpp_info.libdirs[0])
+                src_dir = os.path.join(dep.package_folder, dep.cpp_info.libdirs[0] if self.settings.os != "Windows" else dep.cpp_info.bindirs[0])
                 if not os.path.exists(src_dir):
                     continue
 
@@ -178,11 +207,21 @@ class natronRecipe(ConanFile):
                 shutil.copytree(os.path.join(plugin_src_base, x), os.path.join(dest_plugins_dir, x))
 
         # Fix rpaths so binaries can find their dependencies.
-        rel_deps_lib = os.path.relpath(self._deps_lib_dir, os.path.join(self.package_folder, "bin"))
-        rel_qt_lib = os.path.relpath(self._qt_lib_dir, os.path.join(self.package_folder, "bin"))
-        self.fix_rpath("bin", f"/{rel_deps_lib}", recurse=True)
-        self.fix_rpath("bin", f"/{rel_qt_lib}", recurse=True)
-        self.fix_rpath("deps_lib", "")
+        bin_dir = os.path.join(self.package_folder, "bin")
+        rel_deps_lib = os.path.relpath(self._deps_lib_dir, bin_dir)
+        rel_qt_lib = os.path.relpath(self._qt_lib_dir, bin_dir)
+        paths_for_bin = set()
+        if rel_deps_lib != ".":
+            paths_for_bin.add(rel_deps_lib)
+        if rel_qt_lib != ".":
+            paths_for_bin.add(rel_qt_lib)
+        if len(paths_for_bin) == 0:
+            paths_for_bin.add("")
+        self.fix_rpath("bin", list(paths_for_bin), recurse=True)
+
+        if rel_deps_lib != ".":
+            # deps_lib is not the bin directory so fix all the rpaths in that directory as well.
+            self.fix_rpath(os.path.relpath(self._deps_lib_dir, self.package_folder), [""])
 
     def package_info(self):
         # TODO add finer grain components.
