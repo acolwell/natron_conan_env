@@ -190,14 +190,23 @@ class natronRecipe(ConanFile):
                 files += copy(self, "*.dll", src_dir, dst_dir)
                 files += copy(self, "*.dylib", src_dir, dst_dir)
 
-        print(f"\n\nfiles copied:")
-        for x in files:
-            print(f"\t{x}")
-
-        ofx_plugins_base_dir = self.package_folder
+        package_base = self.package_folder
         if self.settings.os == "Macos":
-            ofx_plugins_base_dir = os.path.join(ofx_plugins_base_dir, "bin", "Natron.app", "Contents")
-        dest_plugins_dir = os.path.join(ofx_plugins_base_dir, "Plugins","OFX", "Natron")
+            package_base = os.path.join(package_base, "Natron.app", "Contents")
+
+        dest_bin_dir = os.path.join(package_base, "bin")
+        if self.settings.os == "Macos":
+            dest_bin_dir = os.path.join(package_base, "MacOS")
+
+            # Copy Natron app files into package_base
+            shutil.copytree(os.path.join(self.package_folder, "bin", "Natron.app", "Contents"), package_base)
+            natron_binaries = ["NatronRenderer", "natron-python"]
+            for x in natron_binaries:
+                files += copy(self, x, os.path.join(self.package_folder, "bin"), dest_bin_dir)
+
+        dest_plugins_dir = os.path.join(package_base, "Plugins","OFX", "Natron")
+
+
 
         os.makedirs(dest_plugins_dir)
         plugin_src_base = self.dependencies["openfx-misc"].package_folder
@@ -206,10 +215,13 @@ class natronRecipe(ConanFile):
                 print(f"Copying {x}")
                 shutil.copytree(os.path.join(plugin_src_base, x), os.path.join(dest_plugins_dir, x))
 
+        print(f"\n\nfiles copied:")
+        for x in files:
+            print(f"\t{x}")
+
         # Fix rpaths so binaries can find their dependencies.
-        bin_dir = os.path.join(self.package_folder, "bin")
-        rel_deps_lib = os.path.relpath(self._deps_lib_dir, bin_dir)
-        rel_qt_lib = os.path.relpath(self._qt_lib_dir, bin_dir)
+        rel_deps_lib = os.path.relpath(self._deps_lib_dir, dest_bin_dir)
+        rel_qt_lib = os.path.relpath(self._qt_lib_dir, dest_bin_dir)
         paths_for_bin = set()
         if rel_deps_lib != ".":
             paths_for_bin.add(rel_deps_lib)
@@ -217,7 +229,7 @@ class natronRecipe(ConanFile):
             paths_for_bin.add(rel_qt_lib)
         if len(paths_for_bin) == 0:
             paths_for_bin.add("")
-        self.fix_rpath("bin", list(paths_for_bin), recurse=True)
+        self.fix_rpath(os.path.relpath(dest_bin_dir, self.package_folder), list(paths_for_bin), recurse=True)
 
         if rel_deps_lib != ".":
             # deps_lib is not the bin directory so fix all the rpaths in that directory as well.
