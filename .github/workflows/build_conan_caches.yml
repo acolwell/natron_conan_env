@@ -94,7 +94,7 @@ jobs:
       - name: Uninstall brew packages
         if: runner.os == 'macOS'
         run: |
-          brew uninstall boost
+          brew uninstall asciidoc source-highlight boost
 
       - name: Install Python
         uses: actions/setup-python@v5
