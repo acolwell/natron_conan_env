@@ -91,6 +91,11 @@ jobs:
             libxcb-present-dev libxcb-composite0-dev libxcb-ewmh-dev libxcb-res0-dev \
             libxcb-util-dev libxcb-util0-dev
 
+      - name: Uninstall brew packages
+        if: runner.os == 'macOS'
+        run: |
+          brew uninstall asciidoc source-highlight boost
+
       - name: Install Python
         uses: actions/setup-python@v5
         with:
