@@ -186,7 +186,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-          pattern: conan-cache-save_*${{ matrix.os.runs_on }}.tgz
+          pattern: conan-cache-save_*_${{ matrix.os.runs_on }}.tgz
           merge-multiple: true
 
       - name: Display structure of downloaded files
