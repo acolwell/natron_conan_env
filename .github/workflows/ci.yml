@@ -120,7 +120,7 @@ jobs:
 
   macos_test:
     name: Test MacOS (x86_64)
-    runs-on: macos-12
+    runs-on: macos-13
 
     env:
       CONAN_CACHE_FILENAME: 'conan-cache-save_macos-12.tgz'
