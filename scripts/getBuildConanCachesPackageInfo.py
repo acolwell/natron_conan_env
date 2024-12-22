@@ -23,7 +23,7 @@ def main(argv):
         if len(ri.extra_options):
             extra_options = ""
             for x in ri.extra_options:
-                extra_options += f'-o "{x}"'
+                extra_options += f' -o "{x}"'
             pi["extra_options"] = extra_options
         package_info.append(pi)
     print(f'package_info={json.dumps(package_info)}')
