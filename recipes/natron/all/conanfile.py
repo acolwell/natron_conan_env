@@ -20,7 +20,11 @@ class natronRecipe(ConanFile):
 
     default_options = {
         "cpython/*:shared": True,
-        "qt/*:shared": True
+        "qt/*:shared": True,
+        "qt/*:qttool": False,
+        "qt/*:qttranslations": False,
+        "qt/*:qtdoc": False,
+        "qt/*:essential_modules": False,
     }
 
     def requirements(self):
