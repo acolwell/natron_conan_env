@@ -1,45 +1,61 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 13c18c1..2293e6c 100644
+index 199062b..4d0cd88 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -57,24 +57,24 @@ endif()
+@@ -59,11 +59,11 @@ if(WIN32)
+ endif()
  find_package(Python3 COMPONENTS Interpreter Development)
- find_package(Qt5 5.15 CONFIG REQUIRED COMPONENTS Core Gui Network Widgets Concurrent)
  
 -if(IS_DEBUG_BUILD AND WIN32)
-+#if(IS_DEBUG_BUILD AND WIN32)
-     # Explicitly setting SHIBOKEN_PYTHON_LIBRARIES variable to avoid PYTHON_DEBUG_LIBRARY-NOTFOUND
-     # link errors on Windows debug builds.
+-    # Explicitly setting SHIBOKEN_PYTHON_LIBRARIES variable to avoid PYTHON_DEBUG_LIBRARY-NOTFOUND
+-    # link errors on Windows debug builds.
 -    set(SHIBOKEN_PYTHON_LIBRARIES ${Python3_LIBRARIES})
 -endif()
--find_package(Shiboken2 5.15 CONFIG REQUIRED COMPONENTS libshiboken2 shiboken2)
++#if(IS_DEBUG_BUILD AND WIN32)
++#    # Explicitly setting SHIBOKEN_PYTHON_LIBRARIES variable to avoid PYTHON_DEBUG_LIBRARY-NOTFOUND
++#    # link errors on Windows debug builds.
 +#    set(SHIBOKEN_PYTHON_LIBRARIES ${Python3_LIBRARIES})
 +#endif()
-+#find_package(Shiboken2 5.15 CONFIG REQUIRED COMPONENTS libshiboken2 shiboken2)
+ 
+ set(QT_COMPONENTS Core Gui Network Widgets Concurrent)
+ if(NATRON_QT6)
+@@ -85,13 +85,13 @@ if(NATRON_QT6)
+     set(PYSIDE_LIB PySide6::pyside6)
+ else()
+     find_package(Qt5 5.15 CONFIG REQUIRED COMPONENTS ${QT_COMPONENTS})
+-    find_package(Shiboken2 5.15 CONFIG REQUIRED COMPONENTS libshiboken2 shiboken2)
++    #find_package(Shiboken2 5.15 CONFIG REQUIRED COMPONENTS libshiboken2 shiboken2)
+ 
+-    find_package(PySide2 5.15 CONFIG REQUIRED COMPONENTS pyside2)
++    #find_package(PySide2 5.15 CONFIG REQUIRED COMPONENTS pyside2)
+     set(QT_VERSION_MAJOR 5)
+     set(PYSIDE_VERSION_MAJOR 2)
+ 
+-    get_target_property(PYSIDE_INCLUDE_DIRS PySide2::pyside2 INTERFACE_INCLUDE_DIRECTORIES)
++    #get_target_property(PYSIDE_INCLUDE_DIRS PySide2::pyside2 INTERFACE_INCLUDE_DIRECTORIES)
+     set(QTCORE_INCLUDE_DIRS ${Qt5Core_INCLUDE_DIRS})
+     set(QTGUI_INCLUDE_DIRS ${Qt5Gui_INCLUDE_DIRS})
+     set(QTWIDGETS_INCLUDE_DIRS ${Qt5Widgets_INCLUDE_DIRS})
+@@ -101,12 +101,12 @@ else()
+     set(PYSIDE_LIB PySide2::pyside2)
+ endif()
  
 -if(IS_DEBUG_BUILD AND WIN32)
-+#if(IS_DEBUG_BUILD AND WIN32)
-     # Remove NDEBUG from Shiboken2 INTERFACE_COMPILE_DEFINITIONS so it is not inherited in debug builds.
--    get_property(ShibokenInterfaceDefs TARGET Shiboken2::libshiboken PROPERTY INTERFACE_COMPILE_DEFINITIONS)
--    list(REMOVE_ITEM ShibokenInterfaceDefs NDEBUG)
--    set_property(TARGET Shiboken2::libshiboken PROPERTY INTERFACE_COMPILE_DEFINITIONS ShibokenInterfaceDefs)
+-    # Remove NDEBUG from Shiboken INTERFACE_COMPILE_DEFINITIONS so it is not inherited in debug builds.
+-    get_property(SHIBOKEN_DEFS TARGET ${SHIBOKEN_LIB} PROPERTY INTERFACE_COMPILE_DEFINITIONS)
+-    list(REMOVE_ITEM SHIBOKEN_DEFS NDEBUG)
+-    set_property(TARGET ${SHIBOKEN_LIB} PROPERTY INTERFACE_COMPILE_DEFINITIONS SHIBOKEN_DEFS)
 -endif()
-+#    get_property(ShibokenInterfaceDefs TARGET Shiboken2::libshiboken PROPERTY INTERFACE_COMPILE_DEFINITIONS)
-+#    list(REMOVE_ITEM ShibokenInterfaceDefs NDEBUG)
-+#    set_property(TARGET Shiboken2::libshiboken PROPERTY INTERFACE_COMPILE_DEFINITIONS ShibokenInterfaceDefs)
++#if(IS_DEBUG_BUILD AND WIN32)
++#    # Remove NDEBUG from Shiboken INTERFACE_COMPILE_DEFINITIONS so it is not inherited in debug builds.
++#    get_property(SHIBOKEN_DEFS TARGET ${SHIBOKEN_LIB} PROPERTY INTERFACE_COMPILE_DEFINITIONS)
++#    list(REMOVE_ITEM SHIBOKEN_DEFS NDEBUG)
++#    set_property(TARGET ${SHIBOKEN_LIB} PROPERTY INTERFACE_COMPILE_DEFINITIONS SHIBOKEN_DEFS)
 +#endif()
  
--find_package(PySide2 5.15 CONFIG REQUIRED COMPONENTS pyside2)
-+#find_package(PySide2 5.15 CONFIG REQUIRED COMPONENTS pyside2)
- set(QT_VERSION_MAJOR 5)
--get_target_property(PYSIDE_INCLUDE_DIRS PySide2::pyside2 INTERFACE_INCLUDE_DIRECTORIES)
--string(REGEX REPLACE "(.*)QtCore$" "\\1" Qt5_INCLUDE_DIR ${Qt5Core_INCLUDE_DIRS})
-+#get_target_property(PYSIDE_INCLUDE_DIRS PySide2::pyside2 INTERFACE_INCLUDE_DIRECTORIES)
-+#string(REGEX REPLACE "(.*)QtCore$" "\\1" Qt5_INCLUDE_DIR ${Qt5Core_INCLUDE_DIRS})
- set(QTCORE_INCLUDE_DIRS ${Qt5_INCLUDE_DIR} ${Qt5Core_INCLUDE_DIRS})
- set(QTGUI_INCLUDE_DIRS ${Qt5Gui_INCLUDE_DIRS})
- set(QTWIDGETS_INCLUDE_DIRS ${Qt5Widgets_INCLUDE_DIRS})
-@@ -104,9 +104,10 @@ if(UNIX AND NOT APPLE)
+ #Since in Natron and OpenFX all strings are supposed UTF-8 and that the constructor
+ #for QString(const char*) assumes ASCII strings, we may run into troubles
+@@ -133,9 +133,10 @@ if(UNIX AND NOT APPLE)
      find_package(ECM NO_MODULE)
      set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${CMAKE_MODULE_PATH})
      find_package(X11 REQUIRED)
@@ -52,7 +68,7 @@ index 13c18c1..2293e6c 100644
      enable_language(RC)
      add_compile_definitions(WINDOWS WIN32 _UNICODE UNICODE NOMINMAX QHTTP_SERVER_STATIC)
 diff --git a/Engine/AppManager.cpp b/Engine/AppManager.cpp
-index 8712eec..c7c58e4 100644
+index 9174556..8694eab 100644
 --- a/Engine/AppManager.cpp
 +++ b/Engine/AppManager.cpp
 @@ -139,7 +139,8 @@
@@ -81,7 +97,7 @@ index 8712eec..c7c58e4 100644
  
  void
 diff --git a/Engine/CMakeLists.txt b/Engine/CMakeLists.txt
-index bd9eebd..f7198e4 100644
+index 576f7b2..bc8e225 100644
 --- a/Engine/CMakeLists.txt
 +++ b/Engine/CMakeLists.txt
 @@ -17,9 +17,8 @@
@@ -96,7 +112,7 @@ index bd9eebd..f7198e4 100644
  
  file(GLOB NatronEngine_HEADERS *.h)
  file(GLOB NatronEngine_SOURCES *.cpp)
-@@ -62,7 +61,7 @@ endif()
+@@ -58,7 +57,7 @@ endif()
  
  list(APPEND NatronEngine_SOURCES
      ${NatronEngine_SOURCES}
@@ -105,22 +121,27 @@ index bd9eebd..f7198e4 100644
      ../Global/glad_source.c
      ../Global/FStreamsSupport.cpp
      ../Global/ProcInfo.cpp
-@@ -76,10 +75,11 @@ target_link_libraries(NatronEngine
+@@ -72,13 +71,13 @@ target_link_libraries(NatronEngine
          HostSupport
          Boost::headers
          Boost::serialization
 -        PkgConfig::Cairo
-+        #PkgConfig::Cairo
 +        cairo::cairo
      PRIVATE
--        Shiboken2::libshiboken
--        PySide2::pyside2
-+        #Shiboken2::libshiboken
-+        #PySide2::pyside2
-         Qt5::Core
-         Qt5::Concurrent
-         Qt5::Network
-@@ -97,6 +97,11 @@ if(WIN32)
+-        ${SHIBOKEN_LIB}
+-        ${PYSIDE_LIB}
+-        Qt::Core
+-        Qt::Concurrent
+-        Qt::Network
++        #${SHIBOKEN_LIB}
++        #${PYSIDE_LIB}
++        Qt5::Core
++        Qt5::Concurrent
++        Qt5::Network
+         Python3::Module
+         ${XDG_LIBS}
+         ceres
+@@ -93,6 +92,10 @@ if(WIN32)
      target_link_libraries(NatronEngine PRIVATE mpr)
  endif()
  
@@ -128,15 +149,14 @@ index bd9eebd..f7198e4 100644
 +    target_link_libraries(NatronEngine PRIVATE opengl::opengl)
 +endif()
 +
-+
  target_include_directories(NatronEngine
      PUBLIC
          ../Global/glad$<IF:$<CONFIG:Debug>,Deb,Rel>/include
 diff --git a/Gui/CMakeLists.txt b/Gui/CMakeLists.txt
-index d20159d..f88a5f3 100644
+index b3e06b0..381bc9c 100644
 --- a/Gui/CMakeLists.txt
 +++ b/Gui/CMakeLists.txt
-@@ -57,14 +57,14 @@ endif()
+@@ -57,19 +57,19 @@ endif()
  
  list(APPEND NatronGui_SOURCES
      ${NatronGui_SOURCES}
@@ -147,15 +167,25 @@ index d20159d..f88a5f3 100644
  add_library(NatronGui STATIC ${NatronGui_HEADERS} ${NatronGui_SOURCES})
  target_link_libraries(NatronGui
      PUBLIC
--        Shiboken2::libshiboken
--        PySide2::pyside2
-+        #Shiboken2::libshiboken
-+        #PySide2::pyside2
-         Qt5::Core
-         Qt5::Concurrent
-         Qt5::Network
+-        ${SHIBOKEN_LIB}
+-        ${PYSIDE_LIB}
+-        Qt::Core
+-        Qt::Concurrent
+-        Qt::Network
+-        Qt::Gui
+-        Qt::Widgets
++        #${SHIBOKEN_LIB}
++        #${PYSIDE_LIB}
++        Qt5::Core
++        Qt5::Concurrent
++        Qt5::Network
++        Qt5::Gui
++        Qt5::Widgets
+         ${QT_OPENGLWIDGETS}
+         Python3::Module
+         NatronEngine
 diff --git a/Gui/GuiApplicationManager10.cpp b/Gui/GuiApplicationManager10.cpp
-index 99bda26..2294b13 100644
+index 452b425..2f96e00 100644
 --- a/Gui/GuiApplicationManager10.cpp
 +++ b/Gui/GuiApplicationManager10.cpp
 @@ -1149,10 +1149,10 @@ GuiApplicationManager::initBuiltinPythonModules()
@@ -195,6 +225,36 @@ index 86d772e..37f0004 100644
  )
  target_include_directories(HostSupport
      PUBLIC
+diff --git a/Renderer/CMakeLists.txt b/Renderer/CMakeLists.txt
+index b54e1f2..740db68 100644
+--- a/Renderer/CMakeLists.txt
++++ b/Renderer/CMakeLists.txt
+@@ -25,9 +25,9 @@ add_executable(NatronRenderer ${NatronRenderer_SOURCES})
+ target_link_libraries(NatronRenderer
+     PRIVATE
+         NatronEngine
+-        Qt::Core
+-        Qt::Concurrent
+-        Qt::Network
++        Qt5::Core
++        Qt5::Concurrent
++        Qt5::Network
+         Python3::Python
+ )
+ target_include_directories(NatronRenderer
+diff --git a/Tests/CMakeLists.txt b/Tests/CMakeLists.txt
+index f40cbcb..333e603 100644
+--- a/Tests/CMakeLists.txt
++++ b/Tests/CMakeLists.txt
+@@ -36,7 +36,7 @@ add_executable(Tests ${Tests_HEADERS} ${Tests_SOURCES})
+ target_link_libraries(Tests
+     PRIVATE
+         NatronEngine
+-        Qt::Core
++        Qt5::Core
+         Python3::Python
+         openMVG
+ )
 diff --git a/libs/libmv/libmv/logging/logging.h b/libs/libmv/libmv/logging/logging.h
 index dcc6a3a..a544f60 100644
 --- a/libs/libmv/libmv/logging/logging.h
@@ -218,3 +278,15 @@ index dcc6a3a..a544f60 100644
  #define V0 LIBMV_LOG(INFO)
  #define V1 LIBMV_LOG(INFO)
  #define V2 LIBMV_LOG(INFO)
+diff --git a/libs/qhttpserver/CMakeLists.txt b/libs/qhttpserver/CMakeLists.txt
+index bac81b9..7a3b3a2 100644
+--- a/libs/qhttpserver/CMakeLists.txt
++++ b/libs/qhttpserver/CMakeLists.txt
+@@ -29,6 +29,6 @@ set(qhttpserver_HEADERS
+ file(GLOB qhttpserver_SOURCES src/*.cpp)
+ set(qhttpserver_SOURCES ${qhttpserver_SOURCES} http-parser/http_parser.c)
+ add_library(qhttpserver STATIC ${qhttpserver_HEADERS} ${qhttpserver_SOURCES})
+-target_link_libraries(qhttpserver PRIVATE Qt::Core Qt::Network)
++target_link_libraries(qhttpserver PRIVATE Qt5::Core Qt5::Network)
+ target_include_directories(qhttpserver PRIVATE http-parser)
+ set_target_properties(qhttpserver PROPERTIES POSITION_INDEPENDENT_CODE ON)
