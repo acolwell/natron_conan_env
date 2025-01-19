@@ -104,9 +104,12 @@ jobs:
         run: |
           conan config install -t dir config
 
-      - name: Export recipes
+      - name: Add Natron specific Conan remotes
         run: |
-          python scripts/exportRecipes.py ${{ github.workspace }}
+          conan remote remove conancenter
+          conan remote add natron_recipes ${{ github.workspace }}
+          conan remote add natron_conancenter ${{ github.workspace }}/modules/conan-center-index
+          conan remote add conancenter https://center2.conan.io
 
       - name: Install dependencies
         run: |
@@ -200,9 +203,12 @@ jobs:
         run: |
           conan config install -t dir config
 
-      - name: Export recipes
+      - name: Add Natron specific Conan remotes
         run: |
-          python scripts/exportRecipes.py ${{ github.workspace }}
+          conan remote remove conancenter
+          conan remote add natron_recipes ${{ github.workspace }}
+          conan remote add natron_conancenter ${{ github.workspace }}/modules/conan-center-index
+          conan remote add conancenter https://center2.conan.io
 
       - name: Add each package to cache
         run: |
@@ -215,7 +221,11 @@ jobs:
       - name: Build or Install Natron dependencies
         working-directory: ./recipes/natron/all
         run: |
-          conan install -pr:a ${{ matrix.os.conan_profile }} --build=missing --version=conan_build .
+          conan install -pr:a ${{ matrix.os.conan_profile }} --build=missing --version=conan_build . --lockfile-out=${{ github.workspace }}/${{ matrix.os.runs_on }}_conan.lock
+
+      - name: Dump New Lockfile
+        run: |
+          cat ${{ matrix.os.runs_on }}_conan.lock
 
       - name: Save cache to file
         run: |
