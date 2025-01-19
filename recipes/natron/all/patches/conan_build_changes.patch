@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 199062b..4d0cd88 100644
+index 48dd73e..1154c0c 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -59,11 +59,11 @@ if(WIN32)
@@ -55,7 +55,7 @@ index 199062b..4d0cd88 100644
  
  #Since in Natron and OpenFX all strings are supposed UTF-8 and that the constructor
  #for QString(const char*) assumes ASCII strings, we may run into troubles
-@@ -133,9 +133,10 @@ if(UNIX AND NOT APPLE)
+@@ -134,9 +134,10 @@ if(UNIX AND NOT APPLE)
      find_package(ECM NO_MODULE)
      set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${CMAKE_MODULE_PATH})
      find_package(X11 REQUIRED)
