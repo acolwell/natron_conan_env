@@ -58,6 +58,8 @@ jobs:
             conan_build_workspace: 'D:/cbw'
           - runs_on: macos-13
             conan_profile: macos_default
+          - runs_on: macos-14
+            conan_profile: macos_arm_default
         packages: ${{ fromJson(needs.get_packages_to_build.outputs.package_info) }}
 
     name: Build ${{ matrix.os.runs_on }} - ${{ matrix.packages.name }}
@@ -149,6 +151,8 @@ jobs:
             conan_build_workspace: 'D:/cbw'
           - runs_on: macos-13
             conan_profile: macos_default
+          - runs_on: macos-14
+            conan_profile: macos_arm_default
 
     name: Merge ${{ matrix.os.runs_on }} packages
     runs-on: ${{ matrix.os.runs_on }}
