@@ -6,3 +6,4 @@ compiler.cppstd=gnu17
 compiler.libcxx=libc++
 compiler.version=13
 os=Macos
+os.version=10.13

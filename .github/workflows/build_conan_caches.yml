@@ -106,12 +106,17 @@ jobs:
         run: |
           conan config install -t dir config
 
+
+      - name: Download msys2 package from conan-center-index
+        if: runner.os == 'Windows'
+        run: |
+          conan download -r conancenter "msys2/cci.latest"
+
       - name: Add Natron specific Conan remotes
         run: |
           conan remote remove conancenter
           conan remote add natron_recipes ${{ github.workspace }}
           conan remote add natron_conancenter ${{ github.workspace }}/modules/conan-center-index
-          conan remote add conancenter https://center2.conan.io
 
       - name: Install dependencies
         run: |
@@ -128,6 +133,11 @@ jobs:
       - name: Remove unnecessary files from cache
         run: |
           conan cache clean '*'
+
+      - name: Remove msys2 package from cache
+        if: runner.os == 'Windows'
+        run: |
+          conan remove -c "msys2/*"
 
       - name: Save cache to file
         run: |
@@ -212,8 +222,7 @@ jobs:
           conan remote remove conancenter
           conan remote add natron_recipes ${{ github.workspace }}
           conan remote add natron_conancenter ${{ github.workspace }}/modules/conan-center-index
-          conan remote add conancenter https://center2.conan.io
-
+ 
       - name: Add each package to cache
         run: |
           python3 scripts/restoreConanCacheSaves.py --remove artifacts

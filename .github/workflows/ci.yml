@@ -15,6 +15,9 @@ jobs:
 
     env:
       CONAN_CACHE_FILENAME: 'conan-cache-save_ubuntu-latest.tgz'
+      CONAN_PROFILE: 'linux_default'
+      NATRON_ARTIFACT_FILENAME: 'natron_ubuntu-latest.tar'
+      DEPS_ARTIFACT_FILENAME: 'natron_ubuntu-latest.deps.json'
 
     steps:
       - name: Checkout branch
@@ -34,7 +37,8 @@ jobs:
             libxcb-shape0-dev libxcb-sync-dev libxcb-xfixes0-dev libxcb-xinerama0-dev \
             libxcb-dri3-dev libxcb-cursor-dev libxcb-dri2-0-dev libxcb-dri3-dev \
             libxcb-present-dev libxcb-composite0-dev libxcb-ewmh-dev libxcb-res0-dev \
-            libxcb-util-dev libxcb-util0-dev libxkbfile-dev uuid-dev
+            libxcb-util-dev libxcb-util0-dev libxkbfile-dev uuid-dev \
+            libegl-dev libwayland-dev libwayland-client0 libwayland-egl1
 
       - name: Install Python
         uses: actions/setup-python@v5
@@ -65,15 +69,45 @@ jobs:
 
       - name: Build openfx-misc
         run: |
-          conan create -pr:a linux_default recipes/openfx-misc/all --version=master --build=missing
+          conan create -pr:a ${{ env.CONAN_PROFILE }} recipes/openfx-misc/all --version=master --build=missing
 
       - name: Build Natron
         run: |
-          conan create -pr:a linux_default recipes/natron/all --version=conan_build --build=missing --lockfile-out=linux_conan.lock
+          conan create -pr:a ${{ env.CONAN_PROFILE }} recipes/natron/all --version=conan_build --build=missing
+
+      - name: Build Natron Installer
+        run: |
+          conan create -pr:a ${{ env.CONAN_PROFILE }} recipes/natron_installer/all --version=conan_build --build=missing --lockfile-out=linux_conan.lock
 
       - name: Dump New Lockfile
         run: |
           cat linux_conan.lock
+
+      - name: Deploy Natron Installer
+        run: |
+          conan install -pr:a ${{ env.CONAN_PROFILE }} --build=missing --requires=natron_installer/conan_build -d direct_deploy --deployer-folder natron_deploy
+
+          tar -cv -f ${{ env.NATRON_ARTIFACT_FILENAME }} -C natron_deploy/direct_deploy natron_installer
+
+      - name: Find Deps
+        run: |
+          python3 scripts/find_deps.py \
+            --json=${{ env.DEPS_ARTIFACT_FILENAME }} \
+            natron_deploy/direct_deploy/natron_installer/bin/Natron \
+            natron_deploy/direct_deploy/natron_installer/lib \
+            natron_deploy/direct_deploy/natron_installer/lib/Qt/lib
+
+      - name: Upload Natron Deps
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: ${{ env.DEPS_ARTIFACT_FILENAME }}
+          path: ${{ env.DEPS_ARTIFACT_FILENAME }}
+
+      - name: Upload Natron Deployment
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name:  ${{ env.NATRON_ARTIFACT_FILENAME }}
+          path:  ${{ env.NATRON_ARTIFACT_FILENAME }}
 
   win_test:
     name: Test Windows
@@ -82,6 +116,9 @@ jobs:
     env:
       CONAN_BUILD_WORKSPACE: 'D:/cbw'
       CONAN_CACHE_FILENAME: 'conan-cache-save_windows-latest.tgz'
+      CONAN_PROFILE: 'msvc_profile'
+      NATRON_ARTIFACT_FILENAME: 'natron_windows-latest'
+      DEPS_ARTIFACT_FILENAME: 'natron_windows-latest.deps.json'
 
     steps:
       - name: Checkout branch
@@ -109,6 +146,10 @@ jobs:
           conan cache restore ${{ env.CONAN_CACHE_FILENAME }}
           Remove-Item ${{ env.CONAN_CACHE_FILENAME }}
 
+      - name: Download msys2 package from conan-center-index
+        run: |
+          conan download -r conancenter "msys2/cci.latest"
+
       - name: Add Natron specific Conan remotes
         run: |
           conan remote remove conancenter
@@ -118,22 +159,49 @@ jobs:
 
       - name: Build openfx-misc
         run: |
-          conan create -pr:a msvc_profile recipes\openfx-misc\all --version=master --build=missing
+          conan create -pr:a ${{ env.CONAN_PROFILE }} recipes\openfx-misc\all --version=master --build=missing
 
       - name: Build Natron
         run: |
-          conan create -pr:a msvc_profile recipes\natron\all --version=conan_build --build=missing --lockfile-out=msvc_conan.lock
+          conan create -pr:a ${{ env.CONAN_PROFILE }} recipes\natron\all --version=conan_build --build=missing
+
+      - name: Build Natron Installer
+        run: |
+          conan create -pr:a ${{ env.CONAN_PROFILE }} recipes\natron_installer\all --version=conan_build --build=missing --lockfile-out=msvc_conan.lock
 
       - name: Dump New Lockfile
         run: |
           cat msvc_conan.lock
+
+      - name: Deploy Natron Installer
+        run: |
+          conan install -pr:a ${{ env.CONAN_PROFILE }} --build=missing --requires=natron_installer/conan_build -d direct_deploy --deployer-folder natron_deploy
+
+      - name: Find Deps
+        run: |
+          python3 scripts/find_deps.py --json=${{ env.DEPS_ARTIFACT_FILENAME }} natron_deploy\direct_deploy\natron_installer\bin\Natron.exe natron_deploy\direct_deploy\natron_installer\bin natron_deploy\direct_deploy\natron_installer\lib
+
+      - name: Upload Natron Deps
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: ${{ env.DEPS_ARTIFACT_FILENAME }}
+          path: ${{ env.DEPS_ARTIFACT_FILENAME }}
+
+      - name: Upload Natron Deployment
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name:  ${{ env.NATRON_ARTIFACT_FILENAME }}
+          path:  natron_deploy/direct_deploy/natron
 
   macos_test:
     name: Test MacOS (x86_64)
     runs-on: macos-13
 
     env:
-      CONAN_CACHE_FILENAME: 'conan-cache-save_macos-13.tgz'
+      CONAN_CACHE_FILENAME: 'conan-cache-save_macos-13_10.13.tgz'
+      CONAN_PROFILE: 'macos_default'
+      NATRON_ARTIFACT_FILENAME: 'natron_macos13.tar'
+      DEPS_ARTIFACT_FILENAME: 'natron_macos13.deps.json'
 
     steps:
       - name: Checkout branch
@@ -173,15 +241,45 @@ jobs:
 
       - name: Build openfx-misc
         run: |
-          conan create -pr:a macos_default recipes/openfx-misc/all --version=master --build=missing
+          conan create -pr:a ${{ env.CONAN_PROFILE }} recipes/openfx-misc/all --version=master --build=missing
 
       - name: Build Natron
         run: |
-          conan create -pr:a macos_default recipes/natron/all --version=conan_build --build=missing --lockfile-out=macos_conan.lock
+          conan create -pr:a ${{ env.CONAN_PROFILE }} recipes/natron/all --version=conan_build --build=missing
+
+      - name: Build Natron Installer
+        run: |
+          conan create -pr:a ${{ env.CONAN_PROFILE }} recipes/natron_installer/all --version=conan_build --build=missing --lockfile-out=macos_conan.lock
 
       - name: Dump New Lockfile
         run: |
           cat macos_conan.lock
+
+      - name: Deploy Natron Installer
+        run: |
+          conan install -pr:a ${{ env.CONAN_PROFILE }} --build=missing --requires=natron_installer/conan_build -d direct_deploy --deployer-folder natron_deploy
+
+          tar -cv -f ${{ env.NATRON_ARTIFACT_FILENAME }} -C natron_deploy/direct_deploy natron_installer
+
+      - name: Find Deps
+        run: |
+          python3 scripts/find_deps.py \
+            --json=${{ env.DEPS_ARTIFACT_FILENAME }} \
+            natron_deploy/direct_deploy/natron_installer/Natron.app/Contents/MacOS/Natron \
+            natron_deploy/direct_deploy/natron_installer/Natron.app/Contents/Frameworks \
+            natron_deploy/direct_deploy/natron_installer/Natron.app/Contents/Frameworks/Qt/lib
+
+      - name: Upload Natron Deps
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: ${{ env.DEPS_ARTIFACT_FILENAME }}
+          path: ${{ env.DEPS_ARTIFACT_FILENAME }}
+
+      - name: Upload Natron Deployment
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name:  ${{ env.NATRON_ARTIFACT_FILENAME }}
+          path:  ${{ env.NATRON_ARTIFACT_FILENAME }}
 
   macos_arm_test:
     name: Test MacOS (arm64)
@@ -189,6 +287,9 @@ jobs:
 
     env:
       CONAN_CACHE_FILENAME: 'conan-cache-save_macos-14.tgz'
+      CONAN_PROFILE: 'macos_arm_default'
+      NATRON_ARTIFACT_FILENAME: 'natron_macos14.tar'
+      DEPS_ARTIFACT_FILENAME: 'natron_macos14.deps.json'
 
     steps:
       - name: Checkout branch
@@ -228,13 +329,43 @@ jobs:
 
       - name: Build openfx-misc
         run: |
-          conan create -pr:a macos_arm_default recipes/openfx-misc/all --version=master --build=missing
+          conan create -pr:a ${{ env.CONAN_PROFILE }} recipes/openfx-misc/all --version=master --build=missing
 
       - name: Build Natron
         run: |
-          conan create -pr:a macos_arm_default recipes/natron/all --version=conan_build --build=missing --lockfile-out=macos_arm_conan.lock
+          conan create -pr:a ${{ env.CONAN_PROFILE }} recipes/natron/all --version=conan_build --build=missing
+
+      - name: Build Natron Installer
+        run: |
+          conan create -pr:a ${{ env.CONAN_PROFILE }} recipes/natron_installer/all --version=conan_build --build=missing --lockfile-out=macos_arm_conan.lock
 
       - name: Dump New Lockfile
         run: |
           cat macos_arm_conan.lock
+
+      - name: Deploy Natron Installer
+        run: |
+          conan install -pr:a ${{ env.CONAN_PROFILE }} --build=missing --requires=natron_installer/conan_build -d direct_deploy --deployer-folder natron_deploy
+
+          tar -cv -f ${{ env.NATRON_ARTIFACT_FILENAME }} -C natron_deploy/direct_deploy natron_installer
+
+      - name: Find Deps
+        run: |
+          python3 scripts/find_deps.py \
+            --json=${{ env.DEPS_ARTIFACT_FILENAME }} \
+            natron_deploy/direct_deploy/natron_installer/Natron.app/Contents/MacOS/Natron \
+            natron_deploy/direct_deploy/natron_installer/Natron.app/Contents/Frameworks \
+            natron_deploy/direct_deploy/natron_installer/Natron.app/Contents/Frameworks/Qt/lib
+
+      - name: Upload Natron Deps
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: ${{ env.DEPS_ARTIFACT_FILENAME }}
+          path: ${{ env.DEPS_ARTIFACT_FILENAME }}
+
+      - name: Upload Natron Deployment
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name:  ${{ env.NATRON_ARTIFACT_FILENAME }}
+          path:  ${{ env.NATRON_ARTIFACT_FILENAME }}
 
