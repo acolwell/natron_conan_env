@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 48dd73e..1154c0c 100644
+index 48dd73e..ea15ff8 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -59,11 +59,11 @@ if(WIN32)
@@ -55,12 +55,8 @@ index 48dd73e..1154c0c 100644
  
  #Since in Natron and OpenFX all strings are supposed UTF-8 and that the constructor
  #for QString(const char*) assumes ASCII strings, we may run into troubles
-@@ -134,9 +134,10 @@ if(UNIX AND NOT APPLE)
-     find_package(ECM NO_MODULE)
-     set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${CMAKE_MODULE_PATH})
-     find_package(X11 REQUIRED)
--    find_package(Wayland COMPONENTS Client Egl)
-+    find_package(wayland COMPONENTS client egl)
+@@ -137,6 +137,7 @@ if(UNIX AND NOT APPLE)
+     find_package(Wayland COMPONENTS Client Egl)
  elseif(APPLE)
      enable_language(OBJCXX)
 +    find_package(OPENGL)
@@ -68,7 +64,7 @@ index 48dd73e..1154c0c 100644
      enable_language(RC)
      add_compile_definitions(WINDOWS WIN32 _UNICODE UNICODE NOMINMAX QHTTP_SERVER_STATIC)
 diff --git a/Engine/AppManager.cpp b/Engine/AppManager.cpp
-index 9174556..8694eab 100644
+index 9174556..a1af7d1 100644
 --- a/Engine/AppManager.cpp
 +++ b/Engine/AppManager.cpp
 @@ -139,7 +139,8 @@
@@ -81,7 +77,23 @@ index 9174556..8694eab 100644
  
  #include "AppManagerPrivate.h" // include breakpad after Engine, because it includes /usr/include/AssertMacros.h on OS X which defines a check(x) macro, which conflicts with boost
  
-@@ -3051,10 +3052,10 @@ PyObject* PyInit_NatronEngine();
+@@ -743,6 +744,7 @@ AppManager::loadInternal(const CLArgs& cl)
+ 
+     _imp->declareSettingsToPython();
+ 
++#ifndef NATRON_RUN_WITHOUT_PYTHON
+     // executeCommandLineSettingCommands
+     {
+         const std::list<std::string>& commands = cl.getSettingCommands();
+@@ -767,6 +769,7 @@ AppManager::loadInternal(const CLArgs& cl)
+             }
+         }
+     }
++#endif  // NATRON_RUN_WITHOUT_PYTHON
+ 
+     ///basically show a splashScreen load fonts etc...
+     return initGui(cl);
+@@ -3051,10 +3054,10 @@ PyObject* PyInit_NatronEngine();
  void
  AppManager::initBuiltinPythonModules()
  {
@@ -97,7 +109,7 @@ index 9174556..8694eab 100644
  
  void
 diff --git a/Engine/CMakeLists.txt b/Engine/CMakeLists.txt
-index 576f7b2..bc8e225 100644
+index 576f7b2..bc99c3f 100644
 --- a/Engine/CMakeLists.txt
 +++ b/Engine/CMakeLists.txt
 @@ -17,9 +17,8 @@
@@ -112,7 +124,22 @@ index 576f7b2..bc8e225 100644
  
  file(GLOB NatronEngine_HEADERS *.h)
  file(GLOB NatronEngine_SOURCES *.cpp)
-@@ -58,7 +57,7 @@ endif()
+@@ -50,7 +49,13 @@ add_custom_command(OUTPUT ${PyEngine_SOURCES}
+ if(UNIX AND NOT APPLE)
+     set(XDG_LIBS ${X11_LIBRARIES})
+     if(Wayland_FOUND)
+-        set(XDG_LIBS Wayland::Client Wayland::Egl ${XDG_LIBS})
++        if (TARGET wayland::wayland-client)
++            # Older target names used on Ubuntu 22.04
++            set(XDG_LIBS wayland::wayland-client wayland::wayland-egl ${XDG_LIBS})
++        else()
++            # Newer target names used on Ubuntu 24.04
++            set(XDG_LIBS Wayland::Client Wayland::Egl ${XDG_LIBS})
++        endif()
+         set(XDG_DEFS __NATRON_WAYLAND__)
+     endif()
+ endif()
+@@ -58,7 +63,7 @@ endif()
  
  list(APPEND NatronEngine_SOURCES
      ${NatronEngine_SOURCES}
@@ -121,7 +148,7 @@ index 576f7b2..bc8e225 100644
      ../Global/glad_source.c
      ../Global/FStreamsSupport.cpp
      ../Global/ProcInfo.cpp
-@@ -72,13 +71,13 @@ target_link_libraries(NatronEngine
+@@ -72,13 +77,13 @@ target_link_libraries(NatronEngine
          HostSupport
          Boost::headers
          Boost::serialization
@@ -141,7 +168,7 @@ index 576f7b2..bc8e225 100644
          Python3::Module
          ${XDG_LIBS}
          ceres
-@@ -93,6 +92,10 @@ if(WIN32)
+@@ -93,6 +98,10 @@ if(WIN32)
      target_link_libraries(NatronEngine PRIVATE mpr)
  endif()
  
@@ -152,6 +179,20 @@ index 576f7b2..bc8e225 100644
  target_include_directories(NatronEngine
      PUBLIC
          ../Global/glad$<IF:$<CONFIG:Debug>,Deb,Rel>/include
+diff --git a/Engine/Knob.cpp b/Engine/Knob.cpp
+index 48e5bd3..0b96f94 100644
+--- a/Engine/Knob.cpp
++++ b/Engine/Knob.cpp
+@@ -2947,7 +2947,9 @@ void
+ KnobHelper::clearExpression(int dimension,
+                             bool clearResults)
+ {
++#ifndef NATRON_RUN_WITHOUT_PYTHON
+     PythonGILLocker pgl;
++#endif  // NATRON_RUN_WITHOUT_PYTHON
+     bool hadExpression;
+     {
+         QMutexLocker k(&_imp->expressionMutex);
 diff --git a/Gui/CMakeLists.txt b/Gui/CMakeLists.txt
 index b3e06b0..381bc9c 100644
 --- a/Gui/CMakeLists.txt
