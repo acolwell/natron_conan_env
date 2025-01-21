@@ -183,3 +183,58 @@ jobs:
         run: |
           cat macos_conan.lock
 
+  macos_arm_test:
+    name: Test MacOS (arm64)
+    runs-on: macos-14
+
+    env:
+      CONAN_CACHE_FILENAME: 'conan-cache-save_macos-14.tgz'
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4.1.1
+        with:
+          submodules: recursive
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip' # caching pip dependencies
+
+      - name: Install Pip requirements
+        run: |
+          pip install -r .github/workflows/requirements.txt
+
+      - name: Install conan config
+        run: |
+          conan config install -t dir config
+
+      - name: Restore conan cache
+        run: |
+          if curl -f -L -o ${{ env.CONAN_CACHE_FILENAME }} https://github.com/acolwell/natron_conan_env/releases/download/conan_cache/${{ env.CONAN_CACHE_FILENAME }}; then
+            conan cache restore ${{ env.CONAN_CACHE_FILENAME }}
+            rm ${{ env.CONAN_CACHE_FILENAME }}
+          else
+            echo "Failed to download cache file : ${{ env.CONAN_CACHE_FILENAME }}"
+          fi
+
+      - name: Add Natron specific Conan remotes
+        run: |
+          conan remote remove conancenter
+          conan remote add natron_recipes ${{ github.workspace }}
+          conan remote add natron_conancenter ${{ github.workspace }}/modules/conan-center-index
+          conan remote add conancenter https://center2.conan.io
+
+      - name: Build openfx-misc
+        run: |
+          conan create -pr:a macos_arm_default recipes/openfx-misc/all --version=master --build=missing
+
+      - name: Build Natron
+        run: |
+          conan create -pr:a macos_arm_default recipes/natron/all --version=conan_build --build=missing --lockfile-out=macos_arm_conan.lock
+
+      - name: Dump New Lockfile
+        run: |
+          cat macos_arm_conan.lock
+
