@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 project(openfx-plugin-tools CXX)
 
 set(CMAKE_VERBOSE_MAKEFILE on)
+set(CMAKE_CXX_STANDARD 11)
 
 find_package(openfx REQUIRED CONFIG)
 find_package(expat REQUIRED CONFIG)
