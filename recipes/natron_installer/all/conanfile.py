@@ -188,6 +188,38 @@ class NatronInstallerConanfile(ConanFile):
 
         return os.path.join(self._qt_base_dir, "plugins")
 
+    def _copy_dependencies(self):
+        self.output.info("Copying dependencies...")
+        files = []
+        install_name_rewrites = []
+
+        for dep in self.dependencies.host.values():
+            if not dep.package_folder or len(dep.cpp_info.libdirs) == 0:
+                continue
+
+            src_dir = os.path.join(dep.package_folder, dep.cpp_info.libdirs[0] if self.settings.os != "Windows" else dep.cpp_info.bindirs[0])
+            if not os.path.exists(src_dir):
+                continue
+
+            dst_dir = self._deps_lib_dir
+            if dep.ref.name == "qt":
+                dst_dir = self._qt_lib_dir
+                # Copy Qt plugins. These need to be in "../plugins" relative to the Qt shared libraries.
+                files += copy(self, "*", os.path.join(dep.package_folder, "plugins"),
+                    self._qt_plugins_dir)
+            elif dep.ref.name == "cpython":
+               (python_files, python_install_name_rewrites) = self._copy_python(dep)
+               files += python_files
+               install_name_rewrites += python_install_name_rewrites
+               continue
+
+            files += copy(self, "*.so", src_dir, dst_dir)
+            files += copy(self, "*.so.*", src_dir, dst_dir)
+            files += copy(self, "*.dll", src_dir, dst_dir)
+            files += copy(self, "*.dylib", src_dir, dst_dir)
+
+        return (files, install_name_rewrites)
+
     def _copy_natron_binaries(self, dst_dir):
         self.output.info("Copying Natron binaries...")
         files = []
@@ -386,30 +418,6 @@ class NatronInstallerConanfile(ConanFile):
             os.makedirs(self._deps_lib_dir)
 
 
-        if True:
-            for dep in self.dependencies.host.values():
-                if dep.package_folder and len(dep.cpp_info.libdirs):
-                    src_dir = os.path.join(dep.package_folder, dep.cpp_info.libdirs[0] if self.settings.os != "Windows" else dep.cpp_info.bindirs[0])
-                    if not os.path.exists(src_dir):
-                        continue
-
-                    dst_dir = self._deps_lib_dir
-                    if dep.ref.name == "qt":
-                        dst_dir = self._qt_lib_dir
-                        # Copy Qt plugins. These need to be in "../plugins" relative to the Qt shared libraries.
-                        files += copy(self, "*", os.path.join(dep.package_folder, "plugins"),
-                            self._qt_plugins_dir)
-                    elif dep.ref.name == "cpython":
-                       (python_files, python_install_name_rewrites) = self._copy_python(dep)
-                       files += python_files
-                       install_name_rewrites += python_install_name_rewrites
-                       continue
-
-                    files += copy(self, "*.so", src_dir, dst_dir)
-                    files += copy(self, "*.so.*", src_dir, dst_dir)
-                    files += copy(self, "*.dll", src_dir, dst_dir)
-                    files += copy(self, "*.dylib", src_dir, dst_dir)
-
         package_base = self.package_folder
         dest_bin_dir = os.path.join(package_base, "bin")
 
@@ -423,6 +431,10 @@ class NatronInstallerConanfile(ConanFile):
         for x in [dest_bin_dir, dest_plugins_dir, dest_resources_dir]:
             if not os.path.exists(x):
                 os.makedirs(x)
+
+        (deps_files, deps_install_name_rewrites) = self._copy_dependencies()
+        files += deps_files
+        install_name_rewrites += deps_install_name_rewrites
 
         files += self._copy_natron_binaries(dest_bin_dir)
 
