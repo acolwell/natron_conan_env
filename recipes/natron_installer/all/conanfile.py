@@ -1,7 +1,8 @@
 import os
 import shutil
 from conan import ConanFile
-from conan.tools.files import copy, save
+from conan.tools.files import copy, rm, save
+from conan.tools.layout import basic_layout
 from conan.tools.microsoft import VCVars
 from conan.tools.scm import Git, Version
 
@@ -56,6 +57,17 @@ class NatronInstallerConanfile(ConanFile):
                 ret.add(libdir)
         return ret
 
+    def source(self):
+        # TODO: Create a proper package for Natron OCIO configs.
+        git = Git(self, folder="OpenColorIO-Configs")
+        git.fetch_commit(url="https://github.com/NatronGitHub/OpenColorIO-Configs.git",
+                commit="master")
+        git.run("submodule update -i --recursive --depth 1")
+
+
+    def layout(self):
+        basic_layout(self, src_folder="src")
+
     def generate(self):
         if self.settings.os == "Windows":
             ms = VCVars(self)
@@ -101,7 +113,9 @@ class NatronInstallerConanfile(ConanFile):
 
     # This method is used to build the source code of the recipe using the desired commands.
     def build(self):
-        pass
+        shutil.copytree(
+            os.path.join(self.source_folder, "OpenColorIO-Configs"),
+            os.path.join(self.build_folder, "OpenColorIO-Configs"))
 
 
     def _fix_rpath(self, directory, rpath_list, recurse=False):
@@ -149,7 +163,7 @@ class NatronInstallerConanfile(ConanFile):
         elif self.settings.os == "Macos":
             return os.path.join(self.package_folder, "Natron.app", "Contents", "Frameworks")
 
-        return os.path.join(self.package_folder, "deps_lib")
+        return os.path.join(self.package_folder, "lib")
 
     @property
     def _qt_base_dir(self):
@@ -175,6 +189,7 @@ class NatronInstallerConanfile(ConanFile):
         return os.path.join(self._qt_base_dir, "plugins")
 
     def _copy_natron_binaries(self, dst_dir):
+        self.output.info("Copying Natron binaries...")
         files = []
 
         natron_package_folder = self.dependencies["natron"].package_folder
@@ -191,6 +206,41 @@ class NatronInstallerConanfile(ConanFile):
             full_src_binary_path = os.path.join(src_dir, src_binary_filename)
             full_dst_binary_path = os.path.join(dst_dir, src_binary_filename)
             files.append(shutil.copy(full_src_binary_path, full_dst_binary_path))
+
+        return files
+
+    def _files_in_dir(self, dir_to_walk):
+        ret = []
+        for root, dirs, files in os.walk(dir_to_walk):
+                for x in files:
+                    ret.append(os.path.join(root, x))
+        return ret 
+
+
+    def _copy_plugins(self, plugins_dir):
+        self.output.info("Copying Plugins...")
+        files = []
+
+        natron_plugins_dir = os.path.join(plugins_dir, "OFX", "Natron")
+        plugin_info = {
+            "openfx-misc": ["Misc.ofx.bundle", "CImg.ofx.bundle"]
+        }
+        for (dep_name, dir_list) in plugin_info.items():
+            src_base_dir = self.dependencies[dep_name].package_folder
+            for x in dir_list:
+                dir_copied = shutil.copytree(os.path.join(src_base_dir, x),
+                    os.path.join(natron_plugins_dir, x))
+                files += self._files_in_dir(dir_copied)
+        return files
+
+    def _copy_resources(self, resources_dir):
+        self.output.info("Copying Resources ...")
+        files = []
+
+        dir_copied = shutil.copytree(
+            os.path.join(self.build_folder, "OpenColorIO-Configs"),
+            os.path.join(resources_dir, "OpenColorIO-Configs"))
+        files += self._files_in_dir(dir_copied)
 
         return files
 
@@ -253,6 +303,8 @@ class NatronInstallerConanfile(ConanFile):
         return (files, install_name_rewrites)
 
     def _copy_python(self, dep_info):
+        self.output.info("Copying Python...")
+
         files = []
         install_name_rewrites = []
 
@@ -307,12 +359,26 @@ class NatronInstallerConanfile(ConanFile):
             install_name_rewrites += new_install_name_rewrites
         else:
             files.append(shutil.copy(shared_lib_src, os.path.join(dst_dir, os.path.basename(shared_lib_src))))
+
+
+        python_lib_dir = os.path.join(self.package_folder, "lib")
+        if self.settings.os == "Macos":
+            python_lib_dir = os.path.join(self._deps_lib_dir, "Python.framework", "Versions", py_version_major_minor, "lib")
+
+        if not os.path.exists(python_lib_dir):
+            os.makedirs(python_lib_dir)
+
+        embed_dst_dir = os.path.join(python_lib_dir, py_dir_name)
+        dir_copied = shutil.copytree(os.path.join(dep_info.package_folder, "lib", py_dir_name),
+            embed_dst_dir)
+        # Remove all existing pycache files
+        rm(self, "__pycache__", dir_copied, recursive=True)
+
+        files += self._files_in_dir(dir_copied)
+
         return (files, install_name_rewrites)
 
     def package(self):
-        for dep in self.dependencies.host.values():
-            print(f"dep {dep}")
-
         files = []
         install_name_rewrites = []
 
@@ -346,14 +412,23 @@ class NatronInstallerConanfile(ConanFile):
 
         package_base = self.package_folder
         dest_bin_dir = os.path.join(package_base, "bin")
+
         if self.settings.os == "Macos":
             package_base = os.path.join(package_base, "Natron.app", "Contents")
             dest_bin_dir = os.path.join(package_base, "MacOS")
 
-        if not os.path.exists(dest_bin_dir):
-            os.makedirs(dest_bin_dir)
+        dest_plugins_dir = os.path.join(package_base, "Plugins")
+        dest_resources_dir = os.path.join(package_base, "Resources")
+
+        for x in [dest_bin_dir, dest_plugins_dir, dest_resources_dir]:
+            if not os.path.exists(x):
+                os.makedirs(x)
 
         files += self._copy_natron_binaries(dest_bin_dir)
+
+        files += self._copy_plugins(dest_plugins_dir)
+
+        files += self._copy_resources(dest_resources_dir)
 
         files += self._copy_system_deps(self._deps_lib_dir)
 
