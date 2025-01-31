@@ -230,7 +230,7 @@ class NatronInstallerConanfile(ConanFile):
         for root, dirs, files in os.walk(dir_to_walk):
                 for x in files:
                     ret.append(os.path.join(root, x))
-        return ret 
+        return ret
 
 
     def _copy_plugins(self, plugins_dir):
@@ -382,9 +382,16 @@ class NatronInstallerConanfile(ConanFile):
         if not os.path.exists(python_lib_dir):
             os.makedirs(python_lib_dir)
 
+        embed_src_dir = os.path.join(dep_info.package_folder, "lib", py_dir_name) if self.settings.os != "Windows" else os.path.join(dep_info.package_folder, "bin", "Lib")
         embed_dst_dir = os.path.join(python_lib_dir, py_dir_name)
-        dir_copied = shutil.copytree(os.path.join(dep_info.package_folder, "lib", py_dir_name),
-            embed_dst_dir)
+        dir_copied = shutil.copytree(embed_src_dir, embed_dst_dir)
+
+        if self.settings.os == "Windows":
+            files += copy(self, "*.pyd",
+                os.path.join(dep_info.package_folder, "bin", "DLLs"),
+                os.path.join(embed_dst_dir, "lib-dynload"))
+
+
         # Remove all existing pycache files
         rm(self, "__pycache__", dir_copied, recursive=True)
 
