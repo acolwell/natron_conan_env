@@ -23,8 +23,6 @@ class NatronInstallerConanfile(ConanFile):
     # Binary configuration
     settings = "os", "compiler", "build_type", "arch"
 
-    _deps_folder = "deps"
-
     # The requirements method allows you to define the dependencies of your recipe
     def requirements(self):
         self.requires(f"natron/{self.version}")
@@ -77,39 +75,6 @@ class NatronInstallerConanfile(ConanFile):
         with open(os.path.join(self.generators_folder, "dep_dirs.json"), "wb") as file:
             file.write(json.dumps(list(dep_dirs), indent=2).encode("utf-8"))
             file.close()
-
-        dst_folder = os.path.join(self.build_folder, self._deps_folder)
-        dep_list = list(self.dependencies.host.values())
-
-        handledSet = set()
-        for dep in dep_list:
-            handledSet.add(dep.ref.name)
-
-        while len(dep_list) > 0:
-            dep = dep_list.pop(0)
-            #print(f"\n\nDep {dep.ref.name} -> {dep.package_folder}")
-            #print(f"\tbindirs {dep.cpp_info.bindirs}")
-            #print(f"\tlibdirs {dep.cpp_info.libdirs}")
-            #print(f"\tresdirs {dep.cpp_info.resdirs}")
-            #print(f"\tsrcdirs {dep.cpp_info.srcdirs}")
-            #print(f"\tbuilddirs {dep.cpp_info.builddirs}")
-
-            for x in dep.dependencies.host.values():
-                if x.ref.name not in handledSet:
-                    #print(f"appending {x.ref.name}")
-                    dep_list.append(x)
-                    handledSet.add(x.ref.name)
-
-            #if dep.package_folder:
-            #    shutil.copytree(dep.package_folder, os.path.join(dst_folder,dep.ref.name))
-            #for src_folder in (dep.cpp_info.bindirs + dep.cpp_info.libdirs):
-            #    if not os.path.exists(src_folder):
-            #        continue
-
-                #copy(self, "*.dylib", src_folder, dst_folder)
-                #copy(self, "*.dll", src_folder, dst_folder)
-                #copy(self, "*.so.*", src_folder, dst_folder)
-                #copy(self, "*.so", src_folder, dst_folder)
 
     # This method is used to build the source code of the recipe using the desired commands.
     def build(self):
@@ -193,9 +158,28 @@ class NatronInstallerConanfile(ConanFile):
         files = []
         install_name_rewrites = []
 
+        deps_to_process = []
+        deps_already_requested = set()
+
+        # Collect top level dependencies
         for dep in self.dependencies.host.values():
+            deps_to_process.append(dep)
+            deps_already_requested.add(dep.ref.name)
+
+        while len(deps_to_process) > 0:
+            dep = deps_to_process.pop(0)
+
+            # Collect all of the dependencies of the current dependency being handled
+            # and add only the ones that have not been requested yet to the processing list.
+            for x in dep.dependencies.host.values():
+                if x.ref.name not in deps_already_requested:
+                    deps_to_process.append(x)
+                    deps_already_requested.add(x.ref.name)
+
             if not dep.package_folder or len(dep.cpp_info.libdirs) == 0:
                 continue
+
+            self.output.info(f"\t{dep.ref.name}")
 
             src_dir = os.path.join(dep.package_folder, dep.cpp_info.libdirs[0] if self.settings.os != "Windows" else dep.cpp_info.bindirs[0])
             if not os.path.exists(src_dir):
@@ -335,8 +319,6 @@ class NatronInstallerConanfile(ConanFile):
         return (files, install_name_rewrites)
 
     def _copy_python(self, dep_info):
-        self.output.info("Copying Python...")
-
         files = []
         install_name_rewrites = []
 
