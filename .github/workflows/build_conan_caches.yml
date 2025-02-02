@@ -107,10 +107,15 @@ jobs:
           conan config install -t dir config
 
 
-      - name: Download msys2 package from conan-center-index
+      - name: Download Minimal Windows packages from conan-center-index
         if: runner.os == 'Windows'
         run: |
           conan download -r conancenter "msys2/cci.latest"
+
+      - name: Download Minimal Linux packages from conan-center-index
+        if: runner.os == 'Linux'
+        run: |
+          conan download -r conancenter "gnu-config/cci.20210814"
 
       - name: Add Natron specific Conan remotes
         run: |

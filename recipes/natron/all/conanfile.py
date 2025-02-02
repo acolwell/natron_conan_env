@@ -34,10 +34,13 @@ class natronRecipe(ConanFile):
         self.requires("expat/2.6.2")
         self.requires("boost/1.84.0")
         self.requires("cairo/1.18.0")
-        self.requires("qt/5.15.14")
+        self.requires("qt/5.15.16")
         self.requires("glog/0.6.0")
         self.requires("ceres-solver/1.14.0")
         self.requires("cpython/3.10.14")
+
+        if self.settings.os == "Linux":
+            self.requires("wayland/1.22.0")
 
     def export_sources(self):
         export_conandata_patches(self)
@@ -86,3 +89,6 @@ class natronRecipe(ConanFile):
 
     def package_info(self):
         self.cpp_info.requires = ["qt::qt", "cpython::cpython", "expat::expat", "boost::boost", "cairo::cairo", "glog::glog", "ceres-solver::ceres-solver"]
+
+        if self.settings.os == "Linux":
+            self.cpp_info.requires += ["wayland::wayland"]
