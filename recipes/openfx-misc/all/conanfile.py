@@ -12,7 +12,7 @@ class openFxMiscRecipe(ConanFile):
     # Optional metadata
     license = "GPL-2.0-only"
     author = "The Natron Developers"
-    url = "https://github.com/acolwell/natron_conan"
+    url = "https://github.com/NatronGitHub/openfx-misc"
     description = "Miscellaneous OFX / OpenFX / Open Effects plugins"
     topics = ("OpenFX", "Natron")
 
@@ -88,7 +88,7 @@ class openFxMiscRecipe(ConanFile):
         plugin_names = ["Misc", "CImg"]
         for plugin_name in plugin_names:
             src_folder = os.path.join(self.build_folder, self._deps_lib_folder)
-            dst_folder = os.path.join(self.package_folder, f"{plugin_name}.ofx.bundle", "Contents", plugin_arch)
+            dst_folder = os.path.join(self.package_folder, f"{plugin_name}.ofx.bundle", "Contents", "Libraries")
             copy(self, "*.dylib", src_folder, dst_folder)
             copy(self, "*.dll", src_folder, dst_folder)
             copy(self, "*.so.*", src_folder, dst_folder)

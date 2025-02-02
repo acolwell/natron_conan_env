@@ -4,6 +4,9 @@ from conan.tools.env import Environment
 from conan.tools.scm import Git
 from conan.tools.files import apply_conandata_patches, export_conandata_patches
 
+import os
+import shutil
+
 class natronRecipe(ConanFile):
     name = "natron"
     package_type = "application"
@@ -60,7 +63,7 @@ class natronRecipe(ConanFile):
         deps = CMakeDeps(self)
         deps.generate()
         tc = CMakeToolchain(self)
-        tc.preprocessor_definitions["NATRON_RUN_WITHOUT_PYTHON"] = "1"
+        tc.preprocessor_definitions["NATRON_RUN_WITHOUT_PYTHON"] = 1
         tc.cache_variables["BUILD_USER_NAME"] = ""
         tc.cache_variables["NATRON_SYSTEM_LIBS"] = "ON"
         tc.generate()
@@ -73,6 +76,13 @@ class natronRecipe(ConanFile):
     def package(self):
         cmake = CMake(self)
         cmake.install()
+
+        if self.settings.os == "Macos":
+            # Move other binaries so they are with the main Natron app binary.
+            for x in ["NatronRenderer", "natron-python"]:
+                src_path = os.path.join(self.package_folder, "bin", x)
+                shutil.move(src_path,
+                    os.path.join(self.package_folder, "bin", "Natron.app", "Contents", "MacOS"))
 
     def package_info(self):
         self.cpp_info.requires = ["qt::qt", "cpython::cpython", "expat::expat", "boost::boost", "cairo::cairo", "glog::glog", "ceres-solver::ceres-solver"]
