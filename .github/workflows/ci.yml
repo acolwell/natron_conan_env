@@ -38,7 +38,7 @@ jobs:
             libxcb-dri3-dev libxcb-cursor-dev libxcb-dri2-0-dev libxcb-dri3-dev \
             libxcb-present-dev libxcb-composite0-dev libxcb-ewmh-dev libxcb-res0-dev \
             libxcb-util-dev libxcb-util0-dev libxkbfile-dev uuid-dev \
-            libegl-dev libwayland-dev libwayland-client0 libwayland-egl1
+            libegl-dev
 
       - name: Install Python
         uses: actions/setup-python@v5
@@ -62,10 +62,9 @@ jobs:
 
       - name: Add Natron specific Conan remotes
         run: |
-          conan remote remove conancenter
+          conan remote disable conancenter
           conan remote add natron_recipes ${{ github.workspace }}
           conan remote add natron_conancenter ${{ github.workspace }}/modules/conan-center-index
-          conan remote add conancenter https://center2.conan.io
 
       - name: Build openfx-misc
         run: |
@@ -152,10 +151,9 @@ jobs:
 
       - name: Add Natron specific Conan remotes
         run: |
-          conan remote remove conancenter
+          conan remote disable conancenter
           conan remote add natron_recipes ${{ github.workspace }}
           conan remote add natron_conancenter ${{ github.workspace }}/modules/conan-center-index
-          conan remote add conancenter https://center2.conan.io
 
       - name: Build openfx-misc
         run: |
@@ -234,10 +232,9 @@ jobs:
 
       - name: Add Natron specific Conan remotes
         run: |
-          conan remote remove conancenter
+          conan remote disable conancenter
           conan remote add natron_recipes ${{ github.workspace }}
           conan remote add natron_conancenter ${{ github.workspace }}/modules/conan-center-index
-          conan remote add conancenter https://center2.conan.io
 
       - name: Build openfx-misc
         run: |
@@ -322,10 +319,9 @@ jobs:
 
       - name: Add Natron specific Conan remotes
         run: |
-          conan remote remove conancenter
+          conan remote disable conancenter
           conan remote add natron_recipes ${{ github.workspace }}
           conan remote add natron_conancenter ${{ github.workspace }}/modules/conan-center-index
-          conan remote add conancenter https://center2.conan.io
 
       - name: Build openfx-misc
         run: |
