@@ -189,7 +189,7 @@ jobs:
         uses: actions/upload-artifact@v4.3.1
         with:
           name:  ${{ env.NATRON_ARTIFACT_FILENAME }}
-          path:  ${{ env.NATRON_ARTIFACT_FILENAME }}
+          path:  natron_deploy/direct_deploy/natron_installer
 
   macos_test:
     name: Test MacOS (x86_64)
