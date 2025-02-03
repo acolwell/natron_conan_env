@@ -196,7 +196,7 @@ jobs:
     runs-on: macos-13
 
     env:
-      CONAN_CACHE_FILENAME: 'conan-cache-save_macos-13_10.13.tgz'
+      CONAN_CACHE_FILENAME: 'conan-cache-save_macos-13_11.7.tgz'
       CONAN_PROFILE: 'macos_default'
       NATRON_ARTIFACT_FILENAME: 'natron_macos13.tar'
       DEPS_ARTIFACT_FILENAME: 'natron_macos13.deps.json'
