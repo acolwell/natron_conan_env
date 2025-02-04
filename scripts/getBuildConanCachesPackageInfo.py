@@ -5,7 +5,7 @@ import sys
 from natron_conan_env import export_recipe_entries
 
 def main(argv):
-    recipes_to_build = ["cpython", "qt", "clang", "cairo"]
+    recipes_to_build = ["cpython", "qt", "cairo"]
 
     recipe_map = {}
     for ri in export_recipe_entries:
