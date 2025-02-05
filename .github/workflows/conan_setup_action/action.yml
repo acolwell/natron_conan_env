@@ -2,8 +2,8 @@ name: 'Natron Conan Setup Action'
 description: 'Common steps for setting up Conan for Natron builds'
 inputs:
   conan_profile:
-    description: 'Profile used tor building'
-    required: true
+    description: 'Profile used for building'
+    required: false
 
   restore_cache_filename:
     description: 'Filename used to restore conan cache'

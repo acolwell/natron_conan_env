@@ -1,32 +1,69 @@
 import json
 import os
+import subprocess
 import sys
 
-from natron_conan_env import export_recipe_entries
+def get_build_info(profile):
+    build_order_cmd = f"conan graph build-order --order-by recipe -f json -pr:a {profile} --build='*' --requires 'natron_installer/conan_build' --update --lockfile-partial"
+    #print(build_order_cmd)
+    profile_build_order = json.loads(subprocess.check_output(build_order_cmd, stderr=subprocess.DEVNULL, shell=True))
+
+    ret = {}
+    for pass_refs in profile_build_order['order']:
+        for ref_obj in pass_refs:
+            ref = ref_obj['ref']
+            pkg = ref[:ref.index("/")]
+            build_args = ref_obj["packages"][0][0]["build_args"]
+            ret[pkg] = {'ref': ref, "build_args": build_args}
+    return ret
 
 def main(argv):
-    recipes_to_build = ["cpython", "qt", "cairo"]
+    profiles = [
+        'msvc_profile',
+        'linux_default',
+        'macos_default',
+        'macos_arm_default'
+    ]
 
-    recipe_map = {}
-    for ri in export_recipe_entries:
-        recipe_map[ri.name] = ri
+    runs_on_map = {
+        'msvc_profile': 'windows-latest',
+        'linux_default': 'ubuntu-latest',
+        'macos_default': 'macos-13',
+        'macos_arm_default': 'macos-14',
+    }
+
+    if len(sys.argv) < 2:
+        print(f"Usage: {os.path.basename(sys.argv[0])} <package_names ...>")
+        sys.exit(-1)
+
+    packages = sys.argv[1:]
 
     package_info = []
-    for recipe_name in recipes_to_build:
-        ri = recipe_map[recipe_name]
+    for profile in profiles:
+        build_info = get_build_info(profile)
 
-        pi = {}
-        pi["name"] = ri.name
-        pi["version"] = ri.version
-        pi["path"] = ri.path
+        for pkg in packages:
+            if pkg not in build_info:
+                print(f"Build info for '{pkg}' not found!")
+                sys.exit(1)
 
-        if len(ri.extra_options):
-            extra_options = ""
-            for x in ri.extra_options:
-                extra_options += f' -o "{x}"'
-            pi["extra_options"] = extra_options
-        package_info.append(pi)
+            build_entry = {}
+            build_entry["runs_on"] = runs_on_map[profile]
+            build_entry["conan_profile"] = profile
+            build_entry["name"] = pkg
+            build_entry["build_args"] = build_info[pkg]["build_args"]
+
+            package_info.append(build_entry)
+
     print(f'package_info={json.dumps(package_info)}')
+
+    merge_info = []
+    for profile in profiles:
+        merge_entry = {}
+        merge_entry["conan_profile"] = profile
+        merge_entry["runs_on"] = runs_on_map[profile]
+        merge_info.append(merge_entry)
+    print(f'merge_info={json.dumps(merge_info)}')
 
 if __name__ == "__main__":
     main(sys.argv[:])
