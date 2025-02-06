@@ -35,6 +35,7 @@ runs:
         with:
           python-version: '3.11'
           cache: 'pip' # caching pip dependencies
+          update-environment: false # Required to keep PKG_CONFIG_PATH from being set and breaking ffmpeg build on Windows.
 
       - name: Install Pip requirements
         shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}

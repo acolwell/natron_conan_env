@@ -1,0 +1,9 @@
+sources:
+  "master":
+    url: "https://github.com/NatronGitHub/openfx-io.git"
+    commit: "master"
+
+patches:
+  "master":
+    - patch_file: "patches/CMakeList-fixes.patch"
+    - patch_file: "patches/remove-gluErrorString.patch"

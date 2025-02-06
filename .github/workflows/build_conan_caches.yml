@@ -41,7 +41,7 @@ jobs:
       - name: Generating Package Info
         id: gen_package_info
         run: |
-          python scripts/getBuildConanCachesPackageInfo.py cairo cpython qt >> $GITHUB_OUTPUT
+          python scripts/getBuildConanCachesPackageInfo.py cairo cpython qt ffmpeg >> $GITHUB_OUTPUT
 
   build_package_matrix:
     strategy:
@@ -55,6 +55,7 @@ jobs:
     needs: [get_packages_to_build]
 
     env:
+      CONAN_HOME: ${{ matrix.packages.runs_on == 'windows-latest' && format('D:\cbw', github.workspace) || '~/.conan2'}}
       CONAN_CACHE_FILENAME: conan_cache_save-${{ matrix.packages.name }}-${{ matrix.packages.conan_profile }}.tgz
 
     steps:
@@ -102,6 +103,7 @@ jobs:
     needs: [get_packages_to_build, build_package_matrix]
 
     env:
+      CONAN_HOME: ${{ matrix.merge_info.runs_on == 'windows-latest' && format('D:\cbw', github.workspace) || '~/.conan2'}}
       CONAN_CACHE_FILENAME: conan_cache_save-${{ matrix.merge_info.conan_profile }}.tgz
 
     steps:
@@ -133,13 +135,29 @@ jobs:
         run: |
           conan cache clean '*'
 
-      - name: Build or Install Natron Installer dependencies
+      - name: Build openfx-io dependencies
         run: |
-          conan install -pr:a ${{ matrix.merge_info.conan_profile }} --update --build=missing  --requires 'natron_installer/conan_build' --build '~natron_installer/conan_build' --lockfile-partial --lockfile-out ${{ matrix.merge_info.conan_profile }}-conan.lock
+          conan install -pr:a ${{ matrix.merge_info.conan_profile }} --requires 'openfx-io/master' --update 'openfx-io/master' --build missing --lockfile-partial
 
-      - name: Dump New Lockfile
+      - name: Remove unnecessary files from cache
         run: |
-          cat ${{ matrix.merge_info.conan_profile }}-conan.lock
+          conan cache clean '*'
+
+      - name: Remove openfx-io so it doesn't get saved in the cache file.
+        run: |
+          conan remove -c 'openfx-io/*'
+
+      - name: Build Natron
+        run: |
+          conan install -pr:a ${{ matrix.merge_info.conan_profile }} --requires 'natron/conan_build' --update 'natron/conan_build' --build missing --lockfile-partial
+
+      - name: Remove unnecessary files from cache
+        run: |
+          conan cache clean '*'
+
+      - name: Remove Natron so it doesn't get saved in the cache file.
+        run: |
+          conan remove -c 'natrom/*'
 
       - name: Remove msys2 package from cache
         if: runner.os == 'Windows'
