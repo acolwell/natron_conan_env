@@ -16,23 +16,19 @@ jobs:
         os:
           - runs_on: ubuntu-latest
             conan_profile: linux_default
-            conan_cache_filename: conan-cache-save_ubuntu-latest.tgz
-            install_artifact_name: natron_ubuntu-latest.tar
+            install_artifact_name: natron-linux_default.tar
 
           - runs_on: windows-latest
             conan_profile: msvc_profile
-            conan_cache_filename: conan-cache-save_windows-latest.tgz
-            install_artifact_name: natron_windows-latest
+            install_artifact_name: natron-msvc_profile
 
           - runs_on: macos-13
             conan_profile: macos_default
-            conan_cache_filename: conan-cache-save_macos-13_11.7.tgz
-            install_artifact_name: natron_macos-13.tar
+            install_artifact_name: natron-macos_default.tar
 
           - runs_on: macos-14
             conan_profile: macos_arm_default
-            conan_cache_filename: conan-cache-save_macos-14.tgz
-            install_artifact_name: natron_macos-14.tar
+            install_artifact_name: natron-macos_arm_default.tar
 
     name: Build Natron Installer ${{ matrix.os.conan_profile }}
     runs-on: ${{ matrix.os.runs_on }}
@@ -47,7 +43,7 @@ jobs:
         uses: ./.github/workflows/conan_setup_action
         with:
           conan_profile: ${{ matrix.os.conan_profile }}
-          restore_cache_filename: ${{ matrix.os.conan_cache_filename }}
+          restore_cache_filename: ${{ format('conan_cache_save-{0}.tgz', matrix.os.conan_profile) }}
 
       - name: Build openfx-misc
         run: |
