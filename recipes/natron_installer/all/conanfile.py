@@ -27,6 +27,7 @@ class NatronInstallerConanfile(ConanFile):
     def requirements(self):
         self.requires(f"natron/{self.version}")
         self.requires(f"openfx-misc/master")
+        self.requires(f"openfx-io/master")
 
     def source(self):
         # TODO: Create a proper package for Natron OCIO configs.
@@ -58,7 +59,10 @@ class NatronInstallerConanfile(ConanFile):
             (current_dir, current_rpath_list) = dirs_left.pop(0)
             for filename in os.listdir(current_dir):
                 binary_path = os.path.join(current_dir, filename)
-                if os.path.isfile(binary_path):
+                if os.path.islink(binary_path):
+                    self.output.info(f"Skipping symlink {binary_path}")
+                    continue
+                elif os.path.isfile(binary_path):
                     if self.settings.os == "Linux":
                         self.output.info(f"Updating RPATH for {binary_path}")
                         new_rpath = ""
@@ -68,7 +72,6 @@ class NatronInstallerConanfile(ConanFile):
                                 new_rpath += ":"
                             new_rpath += f"$ORIGIN{origin_path}"
                         cmd = f'patchelf --force-rpath --set-rpath \'{new_rpath}\' {binary_path}'
-                        self.output.info(f"RPATH command {cmd}")
                         self.run(cmd)
                     elif self.settings.os == "Macos" and len(current_rpath_list) > 0:
                         file_info = subprocess.check_output(["file", "-b", binary_path])
@@ -207,7 +210,8 @@ class NatronInstallerConanfile(ConanFile):
 
         natron_plugins_dir = os.path.join(plugins_dir, "OFX", "Natron")
         plugin_info = {
-            "openfx-misc": ["Misc.ofx.bundle", "CImg.ofx.bundle"]
+            "openfx-misc": ["Misc.ofx.bundle", "CImg.ofx.bundle"],
+            "openfx-io": ["IO.ofx.bundle"]
         }
         for (dep_name, dir_list) in plugin_info.items():
             src_base_dir = self.dependencies[dep_name].package_folder

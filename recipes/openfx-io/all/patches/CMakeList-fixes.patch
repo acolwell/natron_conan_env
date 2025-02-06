@@ -1,0 +1,140 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 415277e..e484ff1 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -54,10 +54,10 @@ include(FindOpenGL REQUIRED)
+ find_package(OpenImageIO)
+ find_package(PNG)
+ find_package(OpenColorIO)
+-find_package(FFmpeg)
++find_package(ffmpeg)
+ find_package(OpenEXR)
+ find_package(LibRaw)
+-find_package(SeExpr2)
++find_package(SeExpr)
+ 
+ if(NOT ${OpenImageIO_VERSION} VERSION_LESS 2.3)
+   # C++14 required for OpenImageIO >= 2.3
+@@ -229,12 +229,12 @@ if(${OPENCOLORIO_FOUND})
+   list(APPEND IO_SOURCES ${IO_SOURCES_OPENCOLORIO})
+ endif()
+ 
+-if(${OPENIMAGEIO_FOUND})
++if(${OpenImageIO_FOUND})
+   list(APPEND IO_RESOURCES ${IO_RESOURCES_OPENIMAGEIO})
+   list(APPEND IO_SOURCES ${IO_SOURCES_OPENIMAGEIO})
+ endif()
+ 
+-if(${FFMPEG_FOUND})
++if(${ffmpeg_FOUND})
+   list(APPEND IO_RESOURCES ${IO_RESOURCES_FFMPEG})
+   list(APPEND IO_SOURCES ${IO_SOURCES_FFMPEG})
+ endif()
+@@ -244,7 +244,7 @@ if(${PNG_FOUND})
+   list(APPEND IO_SOURCES ${IO_SOURCES_PNG})
+ endif()
+ 
+-if(${SEEXPR2_FOUND})
++if(${SeExpr_FOUND})
+   list(APPEND IO_RESOURCES ${IO_RESOURCES_SEEXPR})
+   list(APPEND IO_SOURCES ${IO_SOURCES_SEEXPR})
+ endif()
+@@ -262,7 +262,7 @@ elseif(MINGW)
+ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+ # Linux & FreeBSD
+     set_target_properties(IO PROPERTIES LINK_FLAGS "-Wl,-fvisibility=hidden,--version-script=${OFX_SUPPORT_HEADER_DIR}/linuxSymbols")
+-    set_target_properties(IO PROPERTIES INSTALL_RPATH "$ORIGIN/../../Libraries")
++    set_target_properties(IO PROPERTIES INSTALL_RPATH "$ORIGIN/../Libraries")
+ endif()
+ 
+ target_compile_definitions(IO
+@@ -284,26 +284,26 @@ target_link_libraries(IO
+ 
+ message(STATUS "External library support:")
+ 
+-if(${OPENCOLORIO_FOUND})
++if(${OpenColorIO_FOUND})
+   message(STATUS "  Adding OpenColorIO nodes")
+   target_compile_definitions(IO PRIVATE OFX_IO_USING_OCIO ${OPENCOLORIO_DEFINITIONS})
+   target_include_directories(IO
+     PUBLIC
+-      ${OPENCOLORIO_INCLUDES}
++      ${OpenColorIO_INCLUDES}
+   )
+   target_link_libraries(IO
+     PUBLIC
+-      ${OPENCOLORIO_LIBRARIES}
++      ${OpenColorIO_LIBRARIES}
+   )
+ else()
+   message(STATUS "  Not adding OpenColorIO nodes")
+ endif()
+ 
+-if(${OPENEXR_FOUND})
++if(${OpenEXR_FOUND})
+   message(STATUS "  Adding OpenEXR nodes")
+   target_include_directories(IO
+     PUBLIC
+-      ${OPENEXR_INCLUDES} ${ILMBASE_INCLUDES}
++      ${OpenEXR_INCLUDES} ${ILMBASE_INCLUDES}
+   )
+   target_link_libraries(IO
+     PUBLIC
+@@ -323,15 +323,15 @@ else()
+   message(STATUS "  Not adding OpenEXR nodes")
+ endif()
+ 
+-if(${OPENIMAGEIO_FOUND})
++if(${OpenImageIO_FOUND})
+   message(STATUS "  Adding OpenImageIO nodes")
+   target_include_directories(IO
+     PUBLIC
+-      ${OPENIMAGEIO_INCLUDES}
++      ${OpenImageIO_INCLUDES}
+   )
+   target_link_libraries(IO
+     PUBLIC
+-      ${OPENIMAGEIO_LIBRARIES}
++      ${OpenImageIO_LIBRARIES}
+   )
+   if(LibRaw_VERSION_STRING)
+     target_compile_definitions(IO PRIVATE OFX_IO_USING_LIBRAW ${LibRaw_r_DEFINITIONS})
+@@ -348,16 +348,16 @@ else()
+   message(STATUS "  Not adding OpenImageIO nodes")
+ endif()
+ 
+-if(${FFMPEG_FOUND})
++if(${ffmpeg_FOUND})
+   message(STATUS "  Adding FFmpeg nodes")
+   target_compile_definitions(IO PRIVATE OFX_IO_MT_FFMPEG)
+   target_include_directories(IO
+     PUBLIC
+-      ${FFMPEG_INCLUDES}
++      ${ffmpeg_INCLUDE_DIRS}
+   )
+   target_link_libraries(IO
+     PUBLIC
+-      ${FFMPEG_LIBRARIES}
++      ${ffmpeg_LIBRARIES}
+   )
+ else()
+   message(STATUS "  Not adding FFmpeg nodes")
+@@ -378,15 +378,15 @@ else()
+   message(STATUS "  Not adding PNG nodes")
+ endif()
+ 
+-if(${SEEXPR2_FOUND})
++if(${SeExpr_FOUND})
+   message(STATUS "  Adding SeExpr nodes")
+   target_include_directories(IO
+     PUBLIC
+-      ${SEEXPR2_INCLUDES}
++      ${SeExpr_INCLUDE_DIRS}
+   )
+   target_link_libraries(IO
+     PUBLIC
+-      ${SEEXPR2_LIBRARIES}
++      ${SeExpr_LIBRARIES}
+   )
+ else()
+   message(STATUS "  Not adding SeExpr nodes")
