@@ -1,8 +1,9 @@
 from conan import ConanFile
+from conan.tools.apple import fix_apple_shared_install_name
 from conan.tools.cmake import CMakeToolchain, CMake, cmake_layout, CMakeDeps
-from conan.tools.env import Environment
+from conan.tools.env import Environment, VirtualBuildEnv
 from conan.tools.scm import Git
-from conan.tools.files import apply_conandata_patches, export_conandata_patches
+from conan.tools.files import apply_conandata_patches, copy, export_conandata_patches
 
 import os
 import shutil
@@ -42,6 +43,7 @@ class natronRecipe(ConanFile):
         self.requires("cairo/1.18.0")
         self.requires(f"shiboken2/{qt_version}")
         self.requires(f"qt/{qt_version}")
+        self.requires(f"pyside2/{qt_version}")
         self.requires("glog/0.6.0")
         self.requires("ceres-solver/1.14.0")
         self.requires("cpython/3.10.14")
@@ -62,20 +64,15 @@ class natronRecipe(ConanFile):
         cmake_layout(self, src_folder="src")
 
     def generate(self):
-
-        if self.settings.os == "Linux":
-            # On Linux we need to add python's libdirs to the library path so we can find libpython3.12.so.1.0
-            env = Environment()
-            for libdir in self.dependencies["cpython"].cpp_info.libdirs:
-                env.append_path("LD_LIBRARY_PATH", libdir)
-            env.vars(self).save_script("python_env")
+        vbe = VirtualBuildEnv(self)
+        vbe.generate()
 
         deps = CMakeDeps(self)
         deps.generate()
         tc = CMakeToolchain(self)
-        tc.preprocessor_definitions["NATRON_RUN_WITHOUT_PYTHON"] = 1
         tc.cache_variables["BUILD_USER_NAME"] = ""
         tc.cache_variables["NATRON_SYSTEM_LIBS"] = "ON"
+        tc.cache_variables["PYSIDE_TYPESYSTEMS"] = os.path.join(self.dependencies['pyside2'].package_folder,"share","PySide2","typesystems")
         tc.generate()
 
     def build(self):
@@ -97,7 +94,7 @@ class natronRecipe(ConanFile):
     def package_info(self):
         self.cpp_info.requires = [
             "qt::qt", "cpython::cpython", "expat::expat", "boost::boost", "cairo::cairo",
-            "glog::glog", "ceres-solver::ceres-solver", "shiboken2::libshiboken2"]
+            "glog::glog", "ceres-solver::ceres-solver", "shiboken2::libshiboken2", "pyside2::libpyside2" ]
 
         if self.settings.os == "Linux":
             self.cpp_info.requires += ["wayland::wayland"]
