@@ -1,5 +1,3 @@
-import os
-import shutil
 from conan import ConanFile
 from conan.tools.files import copy, rm, save
 from conan.tools.layout import basic_layout
@@ -139,7 +137,7 @@ class NatronInstallerConanfile(ConanFile):
         install_name_rewrites += python_install_name_rewrites
         deps_already_requested.add("cpython")
 
-        for site_package_dep_name in ["shiboken2"]:
+        for site_package_dep_name in ["shiboken2", "pyside2"]:
             (site_package_files, site_package_install_name_rewrites) = self._copy_site_package(self.dependencies[site_package_dep_name])
             files += site_package_files
             install_name_rewrites += site_package_install_name_rewrites
@@ -177,11 +175,6 @@ class NatronInstallerConanfile(ConanFile):
                 # Copy Qt plugins. These need to be in "../plugins" relative to the Qt shared libraries.
                 files += copy(self, "*", os.path.join(dep.package_folder, "plugins"),
                     self._qt_plugins_dir)
-            elif dep.ref.name == "cpython":
-               (python_files, python_install_name_rewrites) = self._copy_python(dep)
-               files += python_files
-               install_name_rewrites += python_install_name_rewrites
-               continue
 
             files += copy(self, "*.so", src_dir, dst_dir)
             files += copy(self, "*.so.*", src_dir, dst_dir)
@@ -285,7 +278,6 @@ class NatronInstallerConanfile(ConanFile):
 
         os.makedirs(resources_dir)
         files.append(shutil.copy(shared_lib_src, os.path.join(version_dir, name)))
-        files += shutil.copy(shared_lib_src, os.path.join(version_dir, name))
         install_name_rewrites.append((f"@rpath/{os.path.basename(shared_lib_src)}", f"@rpath/{name}.framework/{name}"))
         info_plist_path = os.path.join(resources_dir, "Info.plist")
         save(self, info_plist_path, info_plist_str)
@@ -316,6 +308,7 @@ class NatronInstallerConanfile(ConanFile):
         return python_lib_dir
 
     def _copy_python(self, dep_info):
+        self.output.info("Copying Python...")
         files = []
         install_name_rewrites = []
 
