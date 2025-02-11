@@ -1,16 +1,15 @@
-import os
-import shutil
 from conan import ConanFile
 from conan.tools.files import copy, rm, save
 from conan.tools.layout import basic_layout
 from conan.tools.microsoft import VCVars
 from conan.tools.scm import Git, Version
 
-import os.path
-import re
-import shutil
+import fnmatch
 import io
 import json
+import os
+import re
+import shutil
 import subprocess
 
 class NatronInstallerConanfile(ConanFile):
@@ -132,8 +131,22 @@ class NatronInstallerConanfile(ConanFile):
         deps_to_process = []
         deps_already_requested = set()
 
+        # Copy python before all other dependencies.
+        (python_files, python_install_name_rewrites) = self._copy_python(self.dependencies['cpython'])
+        files += python_files
+        install_name_rewrites += python_install_name_rewrites
+        deps_already_requested.add("cpython")
+
+        for site_package_dep_name in ["shiboken2", "pyside2"]:
+            (site_package_files, site_package_install_name_rewrites) = self._copy_site_package(self.dependencies[site_package_dep_name])
+            files += site_package_files
+            install_name_rewrites += site_package_install_name_rewrites
+            deps_already_requested.add(site_package_dep_name)
+
         # Collect top level dependencies
         for dep in self.dependencies.host.values():
+            if dep.ref.name in deps_already_requested:
+                continue
             deps_to_process.append(dep)
             deps_already_requested.add(dep.ref.name)
 
@@ -162,11 +175,6 @@ class NatronInstallerConanfile(ConanFile):
                 # Copy Qt plugins. These need to be in "../plugins" relative to the Qt shared libraries.
                 files += copy(self, "*", os.path.join(dep.package_folder, "plugins"),
                     self._qt_plugins_dir)
-            elif dep.ref.name == "cpython":
-               (python_files, python_install_name_rewrites) = self._copy_python(dep)
-               files += python_files
-               install_name_rewrites += python_install_name_rewrites
-               continue
 
             files += copy(self, "*.so", src_dir, dst_dir)
             files += copy(self, "*.so.*", src_dir, dst_dir)
@@ -269,11 +277,11 @@ class NatronInstallerConanfile(ConanFile):
         resources_dir = os.path.join(version_dir, "Resources")
 
         os.makedirs(resources_dir)
-        files += shutil.copy(shared_lib_src, os.path.join(version_dir, name))
+        files.append(shutil.copy(shared_lib_src, os.path.join(version_dir, name)))
         install_name_rewrites.append((f"@rpath/{os.path.basename(shared_lib_src)}", f"@rpath/{name}.framework/{name}"))
         info_plist_path = os.path.join(resources_dir, "Info.plist")
         save(self, info_plist_path, info_plist_str)
-        files += info_plist_path
+        files += [info_plist_path]
 
         os.symlink(version, current_version_dir)
         os.symlink(os.path.join("Versions", "Current", "Resources"),
@@ -283,13 +291,30 @@ class NatronInstallerConanfile(ConanFile):
 
         return (files, install_name_rewrites)
 
+    @property
+    def _py_version_major_minor(self):
+        py_version = Version(self.dependencies["cpython"].ref.version)
+        return f"{py_version.major}.{py_version.minor}"
+
+    @property
+    def _py_dir_name(self):
+        return f"python{self._py_version_major_minor}"
+
+    @property
+    def _py_lib_dir(self):
+        python_lib_dir = os.path.join(self.package_folder, "lib")
+        if self.settings.os == "Macos":
+            python_lib_dir = os.path.join(self._deps_lib_dir, "Python.framework", "Versions", self._py_version_major_minor, "lib")
+        return python_lib_dir
+
     def _copy_python(self, dep_info):
+        self.output.info("Copying Python...")
         files = []
         install_name_rewrites = []
 
         py_version = Version(dep_info.ref.version)
         py_version_major_minor = f"{py_version.major}.{py_version.minor}"
-        py_dir_name = f"python{py_version_major_minor}"
+        py_dir_name = self._py_dir_name
 
         shared_lib_src_folder = os.path.join(dep_info.package_folder, "lib")
         shared_lib_src = None
@@ -340,10 +365,7 @@ class NatronInstallerConanfile(ConanFile):
             files.append(shutil.copy(shared_lib_src, os.path.join(dst_dir, os.path.basename(shared_lib_src))))
 
 
-        python_lib_dir = os.path.join(self.package_folder, "lib")
-        if self.settings.os == "Macos":
-            python_lib_dir = os.path.join(self._deps_lib_dir, "Python.framework", "Versions", py_version_major_minor, "lib")
-
+        python_lib_dir = self._py_lib_dir
         if not os.path.exists(python_lib_dir):
             os.makedirs(python_lib_dir)
 
@@ -361,6 +383,35 @@ class NatronInstallerConanfile(ConanFile):
         rm(self, "__pycache__", dir_copied, recursive=True)
 
         files += self._files_in_dir(dir_copied)
+
+        return (files, install_name_rewrites)
+
+    def _copy_site_package(self, dep_info):
+        self.output.info(f"Copying Site Package {dep_info.ref.name} ...")
+        files = []
+        install_name_rewrites = []
+
+        # Copy dependency shared libraries in to shared library directory
+        lib_src_dir = os.path.join(dep_info.package_folder, "lib")
+        for x in os.listdir(lib_src_dir):
+            for pattern in ["*.so", "*.so.*", "*.dll", "*.dylib"]:
+                if fnmatch.fnmatch(x, pattern):
+                    files += shutil.copy(os.path.join(lib_src_dir, x),
+                        os.path.join(self._deps_lib_dir, x))
+
+        # Copy site-package directory into python framework
+        src_base_dir = os.path.join(dep_info.package_folder, "lib", self._py_dir_name, "site-packages")
+        for x in os.listdir(src_base_dir):
+            src_path = os.path.join(src_base_dir, x)
+            if not os.path.isdir(src_path):
+                continue
+            dst_dir = os.path.join(self._py_lib_dir, self._py_dir_name, "site-packages", x)
+            dir_copied = shutil.copytree(src_path, dst_dir)
+
+            # Remove all existing pycache files
+            rm(self, "__pycache__", dir_copied, recursive=True)
+
+            files += self._files_in_dir(dir_copied)
 
         return (files, install_name_rewrites)
 
@@ -499,7 +550,7 @@ class NatronInstallerConanfile(ConanFile):
 
             app_plist_filename = os.path.join(package_base, "Info.plist")
             save(self, app_plist_filename, app_plist)
-            files += app_plist_filename
+            files += [app_plist_filename]
 
             # Apply all install name changes.
             base_cmd = "install_name_tool"

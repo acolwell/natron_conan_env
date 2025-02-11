@@ -157,7 +157,7 @@ jobs:
 
       - name: Remove Natron so it doesn't get saved in the cache file.
         run: |
-          conan remove -c 'natrom/*'
+          conan remove -c 'natron/*'
 
       - name: Remove msys2 package from cache
         if: runner.os == 'Windows'
