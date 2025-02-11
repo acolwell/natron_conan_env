@@ -81,7 +81,7 @@ jobs:
 
       - name: Save cache to file
         run: |
-          conan cache save --file=${{ env.CONAN_CACHE_FILENAME }} 'clang:*'
+          conan cache save --file=${{ env.CONAN_CACHE_FILENAME }} '*:*'
 
       - name: Upload cache
         uses: actions/upload-artifact@v4.3.1
