@@ -4,9 +4,9 @@ import subprocess
 import sys
 
 def get_build_info(profile):
-    build_order_cmd = f"conan graph build-order --order-by recipe -f json -pr:a {profile} --build='*' --requires 'natron_installer/conan_build' --update --lockfile-partial"
+    build_order_cmd = f"conan graph build-order --order-by recipe -f json -pr:a {profile} --build \"*\" --requires natron_installer/conan_build --update --lockfile-partial"
     #print(build_order_cmd)
-    profile_build_order = json.loads(subprocess.check_output(build_order_cmd, stderr=subprocess.DEVNULL, shell=True))
+    profile_build_order = json.loads(subprocess.check_output(build_order_cmd, shell=True))
 
     ret = {}
     for pass_refs in profile_build_order['order']:

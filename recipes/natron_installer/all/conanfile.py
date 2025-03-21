@@ -34,7 +34,7 @@ class NatronInstallerConanfile(ConanFile):
         git = Git(self, folder="OpenColorIO-Configs")
         git.fetch_commit(url="https://github.com/NatronGitHub/OpenColorIO-Configs.git",
                 commit="master")
-        git.run("submodule update -i --recursive --depth 1")
+        git.run("submodule update --init --recursive --depth 1")
 
 
     def layout(self):
