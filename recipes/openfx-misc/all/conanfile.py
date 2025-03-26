@@ -27,7 +27,7 @@ class openFxMiscRecipe(ConanFile):
     def source(self):
         git = Git(self)
         git.fetch_commit(url=self.conan_data["sources"][self.version]["url"], commit=self.conan_data["sources"][self.version]["commit"])
-        git.run("submodule update -i --recursive --depth 1")
+        git.run("submodule update --init --recursive --depth 1")
 
         # Downloading and patching necessary CImg headers.
         CImgBaseURL="https://raw.githubusercontent.com/dtschump/CImg/{}".format(self.conan_data["sources"][self.version]["CImgCommit"])

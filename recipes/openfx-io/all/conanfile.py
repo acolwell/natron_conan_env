@@ -65,7 +65,7 @@ class openfx_ioRecipe(ConanFile):
     def source(self):
         git = Git(self)
         git.fetch_commit(url=self.conan_data["sources"][self.version]["url"], commit=self.conan_data["sources"][self.version]["commit"])
-        git.run("submodule update -i --recursive --depth 1")
+        git.run("submodule update --init --recursive --depth 1")
         apply_conandata_patches(self)
 
     def config_options(self):

@@ -32,7 +32,7 @@ class LLVMConanfile(ConanFile):
     def source(self):
         git = Git(self)
         git.fetch_commit(url="https://github.com/llvm/llvm-project.git", commit="llvmorg-{}".format(self.version))
-        git.run("submodule update -i --recursive --depth 1")
+        git.run("submodule update --init --recursive --depth 1")
 
     def layout(self):
         cmake_layout(self, src_folder="src")
