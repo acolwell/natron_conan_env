@@ -68,10 +68,10 @@ index 48dd73e..3505db4 100644
      enable_language(RC)
      add_compile_definitions(WINDOWS WIN32 _UNICODE UNICODE NOMINMAX QHTTP_SERVER_STATIC)
 diff --git a/Engine/AppManager.cpp b/Engine/AppManager.cpp
-index 9174556..a1af7d1 100644
+index 071f46b..676ba09 100644
 --- a/Engine/AppManager.cpp
 +++ b/Engine/AppManager.cpp
-@@ -139,7 +139,8 @@
+@@ -138,7 +138,8 @@
  #include "Engine/ViewerInstance.h" // RenderStatsMap
  #include "Engine/WriteNode.h"
  
@@ -81,7 +81,7 @@ index 9174556..a1af7d1 100644
  
  #include "AppManagerPrivate.h" // include breakpad after Engine, because it includes /usr/include/AssertMacros.h on OS X which defines a check(x) macro, which conflicts with boost
  
-@@ -743,6 +744,7 @@ AppManager::loadInternal(const CLArgs& cl)
+@@ -742,6 +743,7 @@ AppManager::loadInternal(const CLArgs& cl)
  
      _imp->declareSettingsToPython();
  
@@ -89,7 +89,7 @@ index 9174556..a1af7d1 100644
      // executeCommandLineSettingCommands
      {
          const std::list<std::string>& commands = cl.getSettingCommands();
-@@ -767,6 +769,7 @@ AppManager::loadInternal(const CLArgs& cl)
+@@ -766,6 +768,7 @@ AppManager::loadInternal(const CLArgs& cl)
              }
          }
      }
@@ -97,7 +97,7 @@ index 9174556..a1af7d1 100644
  
      ///basically show a splashScreen load fonts etc...
      return initGui(cl);
-@@ -3051,10 +3054,10 @@ PyObject* PyInit_NatronEngine();
+@@ -3050,10 +3053,10 @@ PyObject* PyInit_NatronEngine();
  void
  AppManager::initBuiltinPythonModules()
  {
