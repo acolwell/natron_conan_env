@@ -37,6 +37,8 @@ class Shiboken2Conanfile(ConanFile):
         "qt/*:essential_modules": False,
         }
 
+    def build_requirements(self):
+        self.tool_requires("cpython/3.10.14")
 
     def requirements(self):
         self.requires(f"qt/{self.version}", run=True)
@@ -96,7 +98,7 @@ class Shiboken2Conanfile(ConanFile):
         return f"{prefix}{base_name}{suffix}"
 
     def package_info(self):
-        self.cpp_info.requires = ["cpython::cpython"]
+        self.cpp_info.requires = ["clang::clang", "qt::qtCore"]
 
         bindir = os.path.join(self.package_folder, "bin")
         self.runenv_info.append_path("PATH", bindir)
@@ -116,7 +118,7 @@ class Shiboken2Conanfile(ConanFile):
         self.cpp_info.components["libshiboken2"].libs = [self._get_lib_name("shiboken2")]
         self.cpp_info.components["libshiboken2"].libdirs = ["lib"]
         self.cpp_info.components["libshiboken2"].includedirs = ["include/shiboken2"]
-        self.cpp_info.components["libshiboken2"].requires = ["clang::clang", "qt::qtCore", "libxml2::libxml2", "libxslt::libxslt"]
+        self.cpp_info.components["libshiboken2"].requires = ["cpython::cpython", "clang::clang", "qt::qtCore", "libxml2::libxml2", "libxslt::libxslt"]
 
         if (self.dependencies['clang'].package_folder):
             self.buildenv_info.define_path("CLANG_INSTALL_DIR", self.dependencies["clang"].package_folder)
