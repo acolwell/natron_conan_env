@@ -155,7 +155,7 @@ Only in sources/pyside2/PySide2/QtCore: out
 Only in sources/pyside2/PySide2/QtGui: out
 diff -aru sources/pyside2/PySide2/QtNetwork/CMakeLists.txt sources/pyside2/PySide2/QtNetwork/CMakeLists.txt
 --- sources/pyside2/PySide2/QtNetwork/CMakeLists.txt	2025-03-02 22:17:48.220509200 -0800
-+++ sources/pyside2/PySide2/QtNetwork/CMakeLists.txt	2025-05-08 09:03:47.852124800 -0700
++++ sources/pyside2/PySide2/QtNetwork/CMakeLists.txt	2025-05-09 09:17:44.093972800 -0700
 @@ -47,6 +47,10 @@
  ${QtNetwork_GEN_DIR}/qtnetwork_module_wrapper.cpp
  )
@@ -195,6 +195,24 @@ Only in sources/pyside2/PySide2/QtSql: out
 Only in sources/pyside2/PySide2/QtTest: out
 Only in sources/pyside2/PySide2/QtWidgets: out
 Only in sources/pyside2/PySide2/QtXml: out
+diff -aru sources/pyside2/PySide2/__init__.py.in sources/pyside2/PySide2/__init__.py.in
+--- sources/pyside2/PySide2/__init__.py.in	2025-03-02 22:17:48.300505500 -0800
++++ sources/pyside2/PySide2/__init__.py.in	2025-05-09 08:57:50.214664400 -0700
+@@ -22,6 +22,14 @@
+     # The below code is for the build process when generate_pyi.py
+     # is executed in the build directory. We need libpyside and Qt in addition.
+     shiboken2 = os.path.join(os.path.dirname(root), 'shiboken2', 'libshiboken')
++
++    for path in os.environ.get('PATH').split(';'):
++        if path:
++             print(f"Trying path {path}...")
++             if os.path.exists(os.path.join(path, 'shiboken2.exe')):
++                 shiboken2 = path
++                 break
++
+     if not os.path.isdir(shiboken2):
+         raise ImportError(shiboken2 + ' does not exist')
+     result = [shiboken2, os.path.join(root, 'libpyside')]
 diff -aru sources/pyside2/cmake/Macros/FindQt5Extra.cmake sources/pyside2/cmake/Macros/FindQt5Extra.cmake
 --- sources/pyside2/cmake/Macros/FindQt5Extra.cmake	2025-03-02 22:17:48.328504300 -0800
 +++ sources/pyside2/cmake/Macros/FindQt5Extra.cmake	2025-05-08 09:03:47.856126700 -0700
@@ -212,7 +230,7 @@ diff -aru sources/pyside2/cmake/Macros/FindQt5Extra.cmake sources/pyside2/cmake/
                  ${QT_LIBRARY_DIR}/QtMultimedia.framework/Headers
 diff -aru sources/pyside2/cmake/Macros/PySideModules.cmake sources/pyside2/cmake/Macros/PySideModules.cmake
 --- sources/pyside2/cmake/Macros/PySideModules.cmake	2025-03-02 22:17:48.329504600 -0800
-+++ sources/pyside2/cmake/Macros/PySideModules.cmake	2025-05-09 07:41:39.527678300 -0700
++++ sources/pyside2/cmake/Macros/PySideModules.cmake	2025-05-10 18:08:41.055954400 -0700
 @@ -94,7 +94,7 @@
      # Workaround: Added ${QT_INCLUDE_DIR}/QtCore until
      # qtdeclarative/8d560d1bf0a747bf62f73fad6b6774095442d9d2 has reached qt5.git
@@ -262,6 +280,23 @@ diff -aru sources/pyside2/cmake/Macros/PySideModules.cmake sources/pyside2/cmake
                          DEPENDS ${total_type_system_files}
                                  ${module_GLUE_SOURCES}
                                  ${${module_NAME}_glue_dependency}
+@@ -204,11 +209,11 @@
+     endif()
+ 
+     # Add target to generate pyi file, which depends on the module target.
+-    add_custom_target("${module_NAME}_pyi" ALL
+-                      COMMAND ${CMAKE_COMMAND} -E env ${ld_prefix}
+-                      "${SHIBOKEN_PYTHON_INTERPRETER}"
+-                      "${CMAKE_CURRENT_SOURCE_DIR}/../support/generate_pyi.py" ${generate_pyi_options})
+-    add_dependencies("${module_NAME}_pyi" ${module_NAME})
++    #add_custom_target("${module_NAME}_pyi" ALL
++    #                  COMMAND ${CMAKE_COMMAND} -E env ${ld_prefix}
++    #                  "${SHIBOKEN_PYTHON_INTERPRETER}"
++    #                  "${CMAKE_CURRENT_SOURCE_DIR}/../support/generate_pyi.py" ${generate_pyi_options})
++    #add_dependencies("${module_NAME}_pyi" ${module_NAME})
+ 
+     # install
+     install(TARGETS ${module_NAME} LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}/PySide2")
 diff -aru sources/pyside2/libpyside/CMakeLists.txt sources/pyside2/libpyside/CMakeLists.txt
 --- sources/pyside2/libpyside/CMakeLists.txt	2025-03-02 22:17:48.987504900 -0800
 +++ sources/pyside2/libpyside/CMakeLists.txt	2025-05-08 09:03:47.860125000 -0700
