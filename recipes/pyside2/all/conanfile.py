@@ -1,7 +1,7 @@
 from conan import ConanFile
 from conan.tools.apple import is_apple_os
 from conan.tools.cmake import CMakeToolchain, CMake, cmake_layout, CMakeDeps
-from conan.tools.env import Environment, VirtualBuildEnv
+from conan.tools.env import Environment, VirtualBuildEnv, VirtualRunEnv
 from conan.tools.files import apply_conandata_patches, check_sha256, download, export_conandata_patches, unzip
 from conan.tools.microsoft import is_msvc
 from conan.tools.scm import Version
@@ -62,12 +62,12 @@ class Pyside2Conanfile(ConanFile):
         cmake_layout(self, src_folder="src")
 
     def generate(self):
-        ms = VirtualBuildEnv(self)
-        ms.generate()
+        vbe = VirtualBuildEnv(self)
+        vbe.generate()
+        vre = VirtualRunEnv(self)
+        vre.generate()
         deps = CMakeDeps(self)
         deps.generate()
-        ms = VirtualBuildEnv(self)
-        ms.generate()
         tc = CMakeToolchain(self)
         tc.variables["BUILD_TESTS"] = False
         tc.variables["DISABLE_DOCSTRINGS"] = True
