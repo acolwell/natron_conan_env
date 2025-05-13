@@ -62,10 +62,17 @@ runs:
       - name: Restore conan cache
         if: inputs.restore_cache_filename != ''
         shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+        env:
+          CONAN_CACHE_BASE_URL: https://github.com/acolwell/natron_conan_env/releases/download/conan_cache
+          CLANG_CACHE_FILE: ${{ format('conan_cache_save-clang-{0}.tgz', inputs.conan_profile) }}
         run: |
-          curl -L -o ${{ inputs.restore_cache_filename }} https://github.com/acolwell/natron_conan_env/releases/download/conan_cache/${{ inputs.restore_cache_filename }}
+          curl -L -o ${{ inputs.restore_cache_filename }} ${{ env.CONAN_CACHE_BASE_URL }}/${{ inputs.restore_cache_filename }}
           conan cache restore ${{ inputs.restore_cache_filename }}
           rm ${{ inputs.restore_cache_filename }}
+
+          curl -L -o ${{ env.CLANG_CACHE_FILE }} ${{ env.CONAN_CACHE_BASE_URL }}/${{ env.CLANG_CACHE_FILE }}
+          conan cache restore ${{ env.CLANG_CACHE_FILE }}
+          rm ${{ env.CLANG_CACHE_FILE }}
 
       - name: Add Natron specific Conan remotes
         shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
