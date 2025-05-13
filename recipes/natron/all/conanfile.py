@@ -30,11 +30,17 @@ class natronRecipe(ConanFile):
         "qt/*:essential_modules": False,
     }
 
+    def build_requirements(self):
+        self.tool_requires(f"shiboken2/<host_version>")
+
     def requirements(self):
+        qt_version = "5.15.16"
+
         self.requires("expat/2.6.2")
         self.requires("boost/1.84.0")
         self.requires("cairo/1.18.0")
-        self.requires("qt/5.15.16")
+        self.requires(f"shiboken2/{qt_version}")
+        self.requires(f"qt/{qt_version}")
         self.requires("glog/0.6.0")
         self.requires("ceres-solver/1.14.0")
         self.requires("cpython/3.10.14")
@@ -88,7 +94,9 @@ class natronRecipe(ConanFile):
                     os.path.join(self.package_folder, "bin", "Natron.app", "Contents", "MacOS"))
 
     def package_info(self):
-        self.cpp_info.requires = ["qt::qt", "cpython::cpython", "expat::expat", "boost::boost", "cairo::cairo", "glog::glog", "ceres-solver::ceres-solver"]
+        self.cpp_info.requires = [
+            "qt::qt", "cpython::cpython", "expat::expat", "boost::boost", "cairo::cairo",
+            "glog::glog", "ceres-solver::ceres-solver", "shiboken2::libshiboken2"]
 
         if self.settings.os == "Linux":
             self.cpp_info.requires += ["wayland::wayland"]

@@ -1,0 +1,7 @@
+sources:
+  "5.15.16":
+    url: "https://download.qt.io/official_releases/QtForPython/pyside2/"
+    sha256: "e70fda978e7bee6ca7334d7e0ace313c27040081117e438f411140ce201dd58d"
+patches:
+  "5.15.16":
+    - patch_file: "patches/5.15.16-fixes.patch"

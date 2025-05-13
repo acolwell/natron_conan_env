@@ -77,6 +77,10 @@ jobs:
         run: |
           conan cache clean '*'
 
+      - name: Remove clang so it doesn't get saved in the cache file.
+        run: |
+          conan remove -c 'clang/*'
+
       - name: Remove msys2 package from cache
         if: runner.os == 'Windows'
         run: |
@@ -157,7 +161,11 @@ jobs:
 
       - name: Remove Natron so it doesn't get saved in the cache file.
         run: |
-          conan remove -c 'natrom/*'
+          conan remove -c 'natron/*'
+
+      - name: Remove clang so it doesn't get saved in the cache file.
+        run: |
+          conan remove -c 'clang/*'
 
       - name: Remove msys2 package from cache
         if: runner.os == 'Windows'

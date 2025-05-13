@@ -48,30 +48,37 @@ jobs:
           conan_profile: ${{ matrix.os.conan_profile }}
           restore_cache_filename: ${{ format('conan_cache_save-{0}.tgz', matrix.os.conan_profile) }}
 
+      - name: Remove old recipes
+        run: |
+          conan remove -c "openfx-misc/*"
+          conan remove -c "openfx-io/*"
+          conan remove -c "natron/*"
+          conan remove -c "natron_installer/*"
+
       - name: Build openfx-misc
         run: |
-          conan install -pr:a ${{ matrix.os.conan_profile }} --requires 'openfx-misc/master' --update 'openfx-misc/master' --build missing --lockfile-partial
+          conan install -pr:a ${{ matrix.os.conan_profile }} --requires 'openfx-misc/master' --update 'openfx-misc/master' --build 'openfx-misc/master' --build missing --lockfile-partial
 
           # Remove unnecessary files
           conan cache clean '*'
 
       - name: Build openfx-io
         run: |
-          conan install -pr:a ${{ matrix.os.conan_profile }} --requires 'openfx-io/master' --update 'openfx-io/master' --build missing --lockfile-partial
+          conan install -pr:a ${{ matrix.os.conan_profile }} --requires 'openfx-io/master' --update 'openfx-io/master' --build 'openfx-io/master' --build missing --lockfile-partial
 
           # Remove unnecessary files
           conan cache clean '*'
 
       - name: Build Natron
         run: |
-          conan install -pr:a ${{ matrix.os.conan_profile }} --requires 'natron/conan_build' --update 'natron/conan_build' --build missing --lockfile-partial
+          conan install -pr:a ${{ matrix.os.conan_profile }} --requires 'natron/conan_build' --update 'natron/conan_build' --build 'natron/conan_build' --build missing --lockfile-partial
 
           # Remove unnecessary files
           conan cache clean '*'
 
       - name: Build Natron Installer
         run: |
-          conan install -pr:a ${{ matrix.os.conan_profile }} --requires 'natron_installer/conan_build' --update 'natron_installer/conan_build' --build missing --lockfile-partial --lockfile-out '${{ matrix.os.conan_profile }}-conan.lock'
+          conan install -pr:a ${{ matrix.os.conan_profile }} --requires 'natron_installer/conan_build' --update 'natron_installer/conan_build' --build 'natron_installer/conan_build' --build missing --lockfile-partial --lockfile-out '${{ matrix.os.conan_profile }}-conan.lock'
 
       - name: Dump New Lockfile
         run: |
