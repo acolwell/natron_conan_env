@@ -1,7 +1,7 @@
 from conan import ConanFile
 from conan.tools.apple import is_apple_os, fix_apple_shared_install_name
 from conan.tools.cmake import CMakeToolchain, CMake, cmake_layout, CMakeDeps
-from conan.tools.env import Environment, VirtualBuildEnv
+from conan.tools.env import Environment, VirtualBuildEnv, VirtualRunEnv
 from conan.tools.files import apply_conandata_patches, check_sha256, copy, download, export_conandata_patches, unzip
 from conan.tools.microsoft import is_msvc
 from conan.tools.scm import Version
@@ -41,10 +41,10 @@ class Shiboken2Conanfile(ConanFile):
         self.tool_requires("cpython/3.10.14")
 
     def requirements(self):
-        self.requires(f"qt/{self.version}", run=True)
+        self.requires(f"qt/{self.version}")
         self.requires("libxml2/2.13.4")
         self.requires("libxslt/1.1.42")
-        self.requires("clang/18.1.8", run=True)
+        self.requires("clang/18.1.8")
         self.requires("cpython/3.10.14")
 
     def export_sources(self):
@@ -69,8 +69,10 @@ class Shiboken2Conanfile(ConanFile):
             env.append_path("PATH", bindir)
         env.vars(self).save_script("clang_env")
 
-        ms = VirtualBuildEnv(self)
-        ms.generate()
+        vbe = VirtualBuildEnv(self)
+        vbe.generate()
+        vre = VirtualRunEnv(self)
+        vre.generate()
         deps = CMakeDeps(self)
         deps.generate()
         tc = CMakeToolchain(self)
@@ -110,10 +112,6 @@ class Shiboken2Conanfile(ConanFile):
             sdk_root_path = tmp_stringio.getvalue().strip()
             self.buildenv_info.define_path("SDKROOT", sdk_root_path)
             self.runenv_info.define_path("SDKROOT", sdk_root_path)
-
-        #libdir = os.path.join(self.package_folder, "lib")
-        #self.runenv_info.append_path("LD_LIBRARY_PATH", libdir)
-        #self.buildenv_info.append_path("LD_LIBRARY_PATH", libdir)
 
         self.cpp_info.components["libshiboken2"].libs = [self._get_lib_name("shiboken2")]
         self.cpp_info.components["libshiboken2"].libdirs = ["lib"]
