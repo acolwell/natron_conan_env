@@ -38,7 +38,7 @@ class Shiboken2Conanfile(ConanFile):
         }
 
     def build_requirements(self):
-        self.tool_requires("cpython/3.10.14")
+        self.tool_requires("cpython/<host_version>")
 
     def requirements(self):
         self.requires(f"qt/{self.version}")
@@ -88,14 +88,24 @@ class Shiboken2Conanfile(ConanFile):
 
     def _get_lib_name(self, base_name):
         prefix = "" if self.settings.os == "Windows" else "lib"
-        python_bin = os.path.join(
+
+        suffix = None
+        if self.settings.os == 'Linux':
+            python_version = self.dependencies["cpython"].ref.version
+            suffix = f".cpython-{python_version.major}{python_version.minor}-x86_64-linux-gnu.so"
+        else:
+            python_bin = os.path.join(
             self.dependencies["cpython"].cpp_info.bindirs[0], "python" if self.settings.os == "Windows" else "python3")
-        output = StringIO()
-        cmd = f'{python_bin} -c "import importlib.machinery; print(importlib.machinery.EXTENSION_SUFFIXES[0])"'
-        self.run(cmd, output)
-        suffix = output.getvalue().strip()
+
+            output = StringIO()
+            cmd = f'{python_bin} -c "import importlib.machinery; print(importlib.machinery.EXTENSION_SUFFIXES[0])"'
+            self.run(cmd, output)
+            suffix = output.getvalue().strip()
+
         if self.settings.os == "Macos" and suffix.endswith(".so"):
             suffix = suffix.replace(".so", ".dylib")
+
+        self.output.info(f"\n\nshiboken2 lib suffix: {suffix}\n")
 
         return f"{prefix}{base_name}{suffix}"
 
@@ -116,7 +126,7 @@ class Shiboken2Conanfile(ConanFile):
         self.cpp_info.components["libshiboken2"].libs = [self._get_lib_name("shiboken2")]
         self.cpp_info.components["libshiboken2"].libdirs = ["lib"]
         self.cpp_info.components["libshiboken2"].includedirs = ["include/shiboken2"]
-        self.cpp_info.components["libshiboken2"].requires = ["cpython::cpython", "clang::clang", "qt::qtCore", "libxml2::libxml2", "libxslt::libxslt"]
+        self.cpp_info.components["libshiboken2"].requires = ["cpython::embed", "clang::clang", "qt::qtCore", "libxml2::libxml2", "libxslt::libxslt"]
 
         if (self.dependencies['clang'].package_folder):
             self.buildenv_info.define_path("CLANG_INSTALL_DIR", self.dependencies["clang"].package_folder)
