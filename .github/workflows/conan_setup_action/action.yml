@@ -4,14 +4,25 @@ inputs:
   conan_profile:
     description: 'Profile used for building'
     required: false
+    default: ''
+
+  restore_clang_package:
+    description: 'Controls whether to restore cached clang package.'
+    required: false
+    default: 'true'
 
   restore_cache_filename:
     description: 'Filename used to restore conan cache'
     required: false
-    default: ""
+    default: ''
+
+  conan_cache_base_url:
+    description: 'Base URL used to fetch conan cache files.'
+    required: false
+    default: 'https://github.com/acolwell/natron_conan_env/releases/download/conan_cache'
 
 runs:
-  using: "composite"
+  using: 'composite'
   steps:
       - name: Install Linux system packages
         if: runner.os == 'Linux'
@@ -59,11 +70,22 @@ runs:
         run: |
           conan download -r conancenter "gnu-config/cci.20210814"
 
+      - name: Restore clang package in conan cache
+        if: inputs.restore_clang_package == 'true' && inputs.conan_profile != ''
+        shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+        env:
+          CLANG_CACHE_FILE: ${{ format('conan_cache_save-clang-{0}.tgz', inputs.conan_profile) }}
+        run: |
+          curl -L -o ${{ env.CLANG_CACHE_FILE }}  ${{ inputs.conan_cache_base_url }}/${{ env.CLANG_CACHE_FILE }}
+          conan cache restore ${{ env.CLANG_CACHE_FILE }}
+          rm ${{ env.CLANG_CACHE_FILE }}
+
+
       - name: Restore conan cache
         if: inputs.restore_cache_filename != ''
         shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
         run: |
-          curl -L -o ${{ inputs.restore_cache_filename }} https://github.com/acolwell/natron_conan_env/releases/download/conan_cache/${{ inputs.restore_cache_filename }}
+          curl -L -o ${{ inputs.restore_cache_filename }}  ${{ inputs.conan_cache_base_url }}/${{ inputs.restore_cache_filename }}
           conan cache restore ${{ inputs.restore_cache_filename }}
           rm ${{ inputs.restore_cache_filename }}
 
