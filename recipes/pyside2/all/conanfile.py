@@ -1,7 +1,7 @@
 from conan import ConanFile
 from conan.tools.apple import is_apple_os
 from conan.tools.cmake import CMakeToolchain, CMake, cmake_layout, CMakeDeps
-from conan.tools.env import Environment, VirtualBuildEnv
+from conan.tools.env import Environment, VirtualBuildEnv, VirtualRunEnv
 from conan.tools.files import apply_conandata_patches, check_sha256, download, export_conandata_patches, unzip
 from conan.tools.microsoft import is_msvc
 from conan.tools.scm import Version
@@ -62,12 +62,12 @@ class Pyside2Conanfile(ConanFile):
         cmake_layout(self, src_folder="src")
 
     def generate(self):
-        ms = VirtualBuildEnv(self)
-        ms.generate()
         deps = CMakeDeps(self)
         deps.generate()
-        ms = VirtualBuildEnv(self)
-        ms.generate()
+        vbe = VirtualBuildEnv(self)
+        vbe.generate()
+        vre = VirtualRunEnv(self)
+        vre.generate()
         tc = CMakeToolchain(self)
         tc.variables["BUILD_TESTS"] = False
         tc.variables["DISABLE_DOCSTRINGS"] = True
@@ -82,21 +82,34 @@ class Pyside2Conanfile(ConanFile):
 
     def _get_lib_name(self, base_name):
         prefix = "" if self.settings.os == "Windows" else "lib"
-        python_bin = os.path.join(
-            self.dependencies["cpython"].cpp_info.bindirs[0], "python3")
-        output = StringIO()
-        cmd = f"{python_bin} -c 'import importlib.machinery; print(importlib.machinery.EXTENSION_SUFFIXES[0])'"
-        self.run(cmd, output)
-        suffix = output.getvalue().strip()
+
+        # Suffix examples
+        # MacOS : .cpython-310-darwin.dylib
+        # Windows: .cp310-win_amd64.pyd
+        # Linux: .cpython-310-x86_64-linux-gnu.so
+        suffix = None
+        if self.settings.os == 'Linux':
+            python_version = self.dependencies["cpython"].ref.version
+            suffix = f".cpython-{python_version.major}{python_version.minor}-x86_64-linux-gnu.so"
+        else:
+            python_bin = os.path.join(
+            self.dependencies["cpython"].cpp_info.bindirs[0], "python" if self.settings.os == "Windows" else "python3")
+
+            output = StringIO()
+            cmd = f'{python_bin} -c "import importlib.machinery; print(importlib.machinery.EXTENSION_SUFFIXES[0])"'
+            self.run(cmd, output)
+            suffix = output.getvalue().strip()
+
         if self.settings.os == "Macos" and suffix.endswith(".so"):
             suffix = suffix.replace(".so", ".dylib")
+
         return f"{prefix}{base_name}{suffix}"
 
     def package_info(self):
         self.cpp_info.components["libpyside2"].libs = [self._get_lib_name("pyside2")]
         self.cpp_info.components["libpyside2"].libdirs = ["lib"]
         self.cpp_info.components["libpyside2"].includedirs = ["include/PySide2"]
-        self.cpp_info.requires = ["qt::qt", "shiboken2::libshiboken2", "cpython::cpython"]
+        self.cpp_info.requires = ["qt::qt", "shiboken2::libshiboken2", "cpython::embed"]
 
     def package(self):
         cmake = CMake(self)

@@ -111,8 +111,6 @@ class Shiboken2Conanfile(ConanFile):
         if self.settings.os == "Macos" and suffix.endswith(".so"):
             suffix = suffix.replace(".so", ".dylib")
 
-        self.output.info(f"\n\nshiboken2 lib suffix: {suffix}\n")
-
         return f"{prefix}{base_name}{suffix}"
 
     def package_info(self):
