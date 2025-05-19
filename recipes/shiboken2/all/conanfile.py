@@ -12,6 +12,7 @@ from io import StringIO
 
 class Shiboken2Conanfile(ConanFile):
     name = "shiboken2"
+    package_type = "application"
     description = "Provides LGPL Qt5 bindings for Python and related tools for binding generation"
     license = "spdx:LGPL-3.0-only OR GPL-3.0-or-later"
     homepage = "https://doc.qt.io/qtforpython-5"
@@ -113,10 +114,6 @@ class Shiboken2Conanfile(ConanFile):
 
     def package_info(self):
         self.cpp_info.requires = ["clang::clang", "qt::qtCore"]
-
-        bindir = os.path.join(self.package_folder, "bin")
-        self.runenv_info.append_path("PATH", bindir)
-        self.buildenv_info.append_path("PATH", bindir)
 
         if self.settings.os == "Macos":
             tmp_stringio = StringIO()

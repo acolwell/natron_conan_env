@@ -8,6 +8,7 @@ import os
 
 class ClangConanfile(ConanFile):
     name = "clang"
+    package_type = "application"
     version="18.1.8"
     description = "LLVM & Clang"
     license = "Apache-2.0"
