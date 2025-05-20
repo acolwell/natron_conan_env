@@ -102,6 +102,8 @@ class Pyside2Conanfile(ConanFile):
 
         if self.settings.os == "Macos" and suffix.endswith(".so"):
             suffix = suffix.replace(".so", ".dylib")
+        elif self.settings.os == "Windows" and suffix.endswith(".pyd"):
+            suffix = suffix.replace(".pyd", ".lib")
 
         return f"{prefix}{base_name}{suffix}"
 
