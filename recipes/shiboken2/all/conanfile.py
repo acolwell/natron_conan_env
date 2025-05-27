@@ -26,6 +26,7 @@ class Shiboken2Conanfile(ConanFile):
         "qt/*:qttranslations": False,
         "qt/*:qtdoc": False,
         "qt/*:essential_modules": False,
+        "qt/*:qtxmlpatterns": True,
         }
 
     default_build_options = {
@@ -35,6 +36,7 @@ class Shiboken2Conanfile(ConanFile):
         "qt/*:qttranslations": False,
         "qt/*:qtdoc": False,
         "qt/*:essential_modules": False,
+        "qt/*:qtxmlpatterns": True,
         }
 
     def build_requirements(self):

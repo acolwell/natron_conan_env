@@ -28,6 +28,7 @@ class natronRecipe(ConanFile):
         "qt/*:qttranslations": False,
         "qt/*:qtdoc": False,
         "qt/*:essential_modules": False,
+        "qt/*:qtxmlpatterns": True,
     }
 
     def build_requirements(self):

@@ -1,0 +1,17 @@
+diff --git a/llvm/lib/Support/CMakeLists.txt b/llvm/lib/Support/CMakeLists.txt
+index e19223fde..8a1a76c5c 100644
+--- a/llvm/lib/Support/CMakeLists.txt
++++ b/llvm/lib/Support/CMakeLists.txt
+@@ -318,7 +318,11 @@ if(LLVM_ENABLE_ZSTD)
+   if(NOT zstd_library)
+     get_property(zstd_library TARGET ${zstd_target} PROPERTY LOCATION)
+   endif()
+-  get_library_name(${zstd_library} zstd_library)
++  if("${zstd_library}" STREQUAL "")
++    set(zstd_library "zstd")
++  else()
++    get_library_name(${zstd_library} zstd_library)
++  endif()
+   set(llvm_system_libs ${llvm_system_libs} "${zstd_library}")
+ endif()
+ 
