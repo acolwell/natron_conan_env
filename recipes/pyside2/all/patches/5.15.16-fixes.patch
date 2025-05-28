@@ -1,6 +1,6 @@
 diff -aru sources/cmake_helpers/helpers.cmake sources/cmake_helpers/helpers.cmake
---- sources/cmake_helpers/helpers.cmake	2025-02-13 14:41:51.000000000 -0800
-+++ sources/cmake_helpers/helpers.cmake	2025-05-19 12:26:09.000000000 -0700
+--- sources/cmake_helpers/helpers.cmake	2025-03-02 22:17:48.150504700 -0800
++++ sources/cmake_helpers/helpers.cmake	2025-05-28 08:40:01.507869200 -0700
 @@ -47,8 +47,8 @@
      Charts
      Svg
@@ -67,8 +67,8 @@ diff -aru sources/cmake_helpers/helpers.cmake sources/cmake_helpers/helpers.cmak
          endif()
      else()
 diff -aru sources/pyside2/CMakeLists.txt sources/pyside2/CMakeLists.txt
---- sources/pyside2/CMakeLists.txt	2025-02-13 14:41:51.000000000 -0800
-+++ sources/pyside2/CMakeLists.txt	2025-05-19 12:24:16.000000000 -0700
+--- sources/pyside2/CMakeLists.txt	2025-03-02 22:17:48.178506000 -0800
++++ sources/pyside2/CMakeLists.txt	2025-05-28 08:40:01.511841400 -0700
 @@ -17,6 +17,8 @@
  include(shiboken_helpers)
  include(helpers)
@@ -134,8 +134,8 @@ diff -aru sources/pyside2/CMakeLists.txt sources/pyside2/CMakeLists.txt
  endif()
  
 diff -aru sources/pyside2/PySide2/CMakeLists.txt sources/pyside2/PySide2/CMakeLists.txt
---- sources/pyside2/PySide2/CMakeLists.txt	2025-02-13 14:41:51.000000000 -0800
-+++ sources/pyside2/PySide2/CMakeLists.txt	2025-05-12 14:20:00.000000000 -0700
+--- sources/pyside2/PySide2/CMakeLists.txt	2025-03-02 22:17:48.180505500 -0800
++++ sources/pyside2/PySide2/CMakeLists.txt	2025-05-28 08:40:01.515868400 -0700
 @@ -54,6 +54,12 @@
      if ("${shortname}" STREQUAL "OpenGLFunctions")
          set(_qt_module_name "Qt${QT_MAJOR_VERSION}Gui")
@@ -150,8 +150,8 @@ diff -aru sources/pyside2/PySide2/CMakeLists.txt sources/pyside2/PySide2/CMakeLi
  
      # Create a module header consisting of pyside2_global.h and the module
 diff -aru sources/pyside2/PySide2/QtNetwork/CMakeLists.txt sources/pyside2/PySide2/QtNetwork/CMakeLists.txt
---- sources/pyside2/PySide2/QtNetwork/CMakeLists.txt	2025-02-13 14:41:51.000000000 -0800
-+++ sources/pyside2/PySide2/QtNetwork/CMakeLists.txt	2025-05-12 14:20:00.000000000 -0700
+--- sources/pyside2/PySide2/QtNetwork/CMakeLists.txt	2025-03-02 22:17:48.220509200 -0800
++++ sources/pyside2/PySide2/QtNetwork/CMakeLists.txt	2025-05-28 08:40:01.517868800 -0700
 @@ -47,6 +47,10 @@
  ${QtNetwork_GEN_DIR}/qtnetwork_module_wrapper.cpp
  )
@@ -164,8 +164,8 @@ diff -aru sources/pyside2/PySide2/QtNetwork/CMakeLists.txt sources/pyside2/PySid
               PROPERTY QT_ENABLED_PUBLIC_FEATURES)
  get_property(QtNetwork_disabled_features TARGET Qt${QT_MAJOR_VERSION}::Network
 diff -aru sources/pyside2/PySide2/QtSql/CMakeLists.txt sources/pyside2/PySide2/QtSql/CMakeLists.txt
---- sources/pyside2/PySide2/QtSql/CMakeLists.txt	2025-02-13 14:41:51.000000000 -0800
-+++ sources/pyside2/PySide2/QtSql/CMakeLists.txt	2025-05-12 14:20:00.000000000 -0700
+--- sources/pyside2/PySide2/QtSql/CMakeLists.txt	2025-03-02 22:17:48.266528500 -0800
++++ sources/pyside2/PySide2/QtSql/CMakeLists.txt	2025-05-28 08:40:01.518867300 -0700
 @@ -20,6 +20,10 @@
  ${QtSql_GEN_DIR}/qtsql_module_wrapper.cpp
  )
@@ -185,8 +185,8 @@ diff -aru sources/pyside2/PySide2/QtSql/CMakeLists.txt sources/pyside2/PySide2/Q
 +    target_compile_definitions(QtSql PRIVATE QT_WIDGETS_LIB)
 +endif()
 diff -aru sources/pyside2/PySide2/__init__.py.in sources/pyside2/PySide2/__init__.py.in
---- sources/pyside2/PySide2/__init__.py.in	2025-02-13 14:41:51.000000000 -0800
-+++ sources/pyside2/PySide2/__init__.py.in	2025-05-12 14:20:00.000000000 -0700
+--- sources/pyside2/PySide2/__init__.py.in	2025-03-02 22:17:48.300505500 -0800
++++ sources/pyside2/PySide2/__init__.py.in	2025-05-28 08:40:01.520877500 -0700
 @@ -22,6 +22,14 @@
      # The below code is for the build process when generate_pyi.py
      # is executed in the build directory. We need libpyside and Qt in addition.
@@ -203,8 +203,8 @@ diff -aru sources/pyside2/PySide2/__init__.py.in sources/pyside2/PySide2/__init_
          raise ImportError(shiboken2 + ' does not exist')
      result = [shiboken2, os.path.join(root, 'libpyside')]
 diff -aru sources/pyside2/cmake/Macros/FindQt5Extra.cmake sources/pyside2/cmake/Macros/FindQt5Extra.cmake
---- sources/pyside2/cmake/Macros/FindQt5Extra.cmake	2025-02-13 14:41:51.000000000 -0800
-+++ sources/pyside2/cmake/Macros/FindQt5Extra.cmake	2025-05-12 14:20:00.000000000 -0700
+--- sources/pyside2/cmake/Macros/FindQt5Extra.cmake	2025-03-02 22:17:48.328504300 -0800
++++ sources/pyside2/cmake/Macros/FindQt5Extra.cmake	2025-05-28 08:40:01.522867900 -0700
 @@ -4,9 +4,9 @@
  # CT: maybe we can remove this.
  # For now, I just use the mapping to Qt5
@@ -218,8 +218,8 @@ diff -aru sources/pyside2/cmake/Macros/FindQt5Extra.cmake sources/pyside2/cmake/
              PATHS ${QT_HEADERS_DIR}/QtMultimedia
                  ${QT_LIBRARY_DIR}/QtMultimedia.framework/Headers
 diff -aru sources/pyside2/cmake/Macros/PySideModules.cmake sources/pyside2/cmake/Macros/PySideModules.cmake
---- sources/pyside2/cmake/Macros/PySideModules.cmake	2025-02-13 14:41:51.000000000 -0800
-+++ sources/pyside2/cmake/Macros/PySideModules.cmake	2025-05-13 06:42:09.000000000 -0700
+--- sources/pyside2/cmake/Macros/PySideModules.cmake	2025-03-02 22:17:48.329504600 -0800
++++ sources/pyside2/cmake/Macros/PySideModules.cmake	2025-05-28 08:40:01.523870900 -0700
 @@ -56,7 +56,7 @@
      string(REGEX REPLACE ^qt "" _module ${_module})
  
@@ -298,8 +298,8 @@ diff -aru sources/pyside2/cmake/Macros/PySideModules.cmake sources/pyside2/cmake
      # install
      install(TARGETS ${module_NAME} LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}/PySide2")
 diff -aru sources/pyside2/libpyside/CMakeLists.txt sources/pyside2/libpyside/CMakeLists.txt
---- sources/pyside2/libpyside/CMakeLists.txt	2025-02-13 14:41:51.000000000 -0800
-+++ sources/pyside2/libpyside/CMakeLists.txt	2025-05-12 14:20:00.000000000 -0700
+--- sources/pyside2/libpyside/CMakeLists.txt	2025-03-02 22:17:48.987504900 -0800
++++ sources/pyside2/libpyside/CMakeLists.txt	2025-05-28 08:40:01.525871800 -0700
 @@ -80,6 +80,10 @@
  add_library(pyside2 SHARED ${libpyside_SRC} ${other_files})
  add_library(PySide2::pyside2 ALIAS pyside2)
@@ -312,8 +312,8 @@ diff -aru sources/pyside2/libpyside/CMakeLists.txt sources/pyside2/libpyside/CMa
      ${QML_INCLUDES}
      ${Qt${QT_MAJOR_VERSION}Core_PRIVATE_INCLUDE_DIRS}
 diff -aru sources/pyside2/plugins/CMakeLists.txt sources/pyside2/plugins/CMakeLists.txt
---- sources/pyside2/plugins/CMakeLists.txt	2025-02-13 14:41:51.000000000 -0800
-+++ sources/pyside2/plugins/CMakeLists.txt	2025-05-12 14:20:00.000000000 -0700
+--- sources/pyside2/plugins/CMakeLists.txt	2025-03-02 22:17:49.017505200 -0800
++++ sources/pyside2/plugins/CMakeLists.txt	2025-05-28 08:40:01.527838400 -0700
 @@ -9,7 +9,16 @@
      customwidget.h
      customwidgets.h
@@ -342,8 +342,8 @@ diff -aru sources/pyside2/plugins/CMakeLists.txt sources/pyside2/plugins/CMakeLi
  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
      set(LIBRARY_OUTPUT_SUFFIX ${CMAKE_DEBUG_POSTFIX})
 diff -aru sources/pyside2-tools/CMakeLists.txt sources/pyside2-tools/CMakeLists.txt
---- sources/pyside2-tools/CMakeLists.txt	2025-02-13 14:41:51.000000000 -0800
-+++ sources/pyside2-tools/CMakeLists.txt	2025-05-12 14:20:00.000000000 -0700
+--- sources/pyside2-tools/CMakeLists.txt	2025-03-02 22:17:48.154504300 -0800
++++ sources/pyside2-tools/CMakeLists.txt	2025-05-28 08:40:01.528834600 -0700
 @@ -9,6 +9,7 @@
  find_package(Shiboken2 2.0.0 REQUIRED)
  find_package(Qt5 REQUIRED Core)
@@ -362,8 +362,8 @@ diff -aru sources/pyside2-tools/CMakeLists.txt sources/pyside2-tools/CMakeLists.
  set(RCC_PATH "${TOOLS_PATH}/rcc${EXE_EXT}")
  if (APPLE)
 diff -aru sources/pyside2-tools/pylupdate/CMakeLists.txt sources/pyside2-tools/pylupdate/CMakeLists.txt
---- sources/pyside2-tools/pylupdate/CMakeLists.txt	2025-02-13 14:41:51.000000000 -0800
-+++ sources/pyside2-tools/pylupdate/CMakeLists.txt	2025-05-12 14:20:00.000000000 -0700
+--- sources/pyside2-tools/pylupdate/CMakeLists.txt	2025-03-02 22:17:48.159504300 -0800
++++ sources/pyside2-tools/pylupdate/CMakeLists.txt	2025-05-28 08:40:01.530867100 -0700
 @@ -11,10 +11,7 @@
  translator.cpp
  )
@@ -397,8 +397,8 @@ diff -aru sources/pyside2-tools/pylupdate/CMakeLists.txt sources/pyside2-tools/p
  
  install(TARGETS pyside2-lupdate RUNTIME DESTINATION bin)
 diff -aru sources/shiboken2/ApiExtractor/CMakeLists.txt sources/shiboken2/ApiExtractor/CMakeLists.txt
---- sources/shiboken2/ApiExtractor/CMakeLists.txt	2025-02-13 14:41:52.000000000 -0800
-+++ sources/shiboken2/ApiExtractor/CMakeLists.txt	2025-05-19 12:33:13.000000000 -0700
+--- sources/shiboken2/ApiExtractor/CMakeLists.txt	2025-03-02 22:17:49.539507200 -0800
++++ sources/shiboken2/ApiExtractor/CMakeLists.txt	2025-05-28 08:40:01.531867200 -0700
 @@ -32,8 +32,7 @@
  xmlutils.cpp
  )
@@ -436,8 +436,8 @@ diff -aru sources/shiboken2/ApiExtractor/CMakeLists.txt sources/shiboken2/ApiExt
  
  if (Qt${QT_MAJOR_VERSION}XmlPatterns_FOUND)
 diff -aru sources/shiboken2/CMakeLists.txt sources/shiboken2/CMakeLists.txt
---- sources/shiboken2/CMakeLists.txt	2025-02-13 14:41:52.000000000 -0800
-+++ sources/shiboken2/CMakeLists.txt	2025-05-19 12:33:13.000000000 -0700
+--- sources/shiboken2/CMakeLists.txt	2025-03-02 22:17:49.644509200 -0800
++++ sources/shiboken2/CMakeLists.txt	2025-05-28 08:40:01.533867800 -0700
 @@ -20,7 +20,7 @@
  
  set (QT_MAJOR_VERSION 5)
@@ -461,8 +461,8 @@ diff -aru sources/shiboken2/CMakeLists.txt sources/shiboken2/CMakeLists.txt
      add_subdirectory(shibokenmodule)
  
 diff -aru sources/shiboken2/data/shiboken_helpers.cmake sources/shiboken2/data/shiboken_helpers.cmake
---- sources/shiboken2/data/shiboken_helpers.cmake	2025-02-13 14:41:52.000000000 -0800
-+++ sources/shiboken2/data/shiboken_helpers.cmake	2025-05-19 12:33:13.000000000 -0700
+--- sources/shiboken2/data/shiboken_helpers.cmake	2025-03-02 22:17:49.655508800 -0800
++++ sources/shiboken2/data/shiboken_helpers.cmake	2025-05-28 08:47:37.060341600 -0700
 @@ -89,8 +89,10 @@
      execute_process(
          COMMAND ${PYTHON_EXECUTABLE} -c "if True:
@@ -498,7 +498,15 @@ diff -aru sources/shiboken2/data/shiboken_helpers.cmake sources/shiboken2/data/s
      set(SHIBOKEN_PYTHON_INTERPRETER "${PYTHON_EXECUTABLE}")
      set_property(GLOBAL PROPERTY SHIBOKEN_PYTHON_INTERPRETER "${PYTHON_EXECUTABLE}")
  endmacro()
-@@ -424,9 +434,9 @@
+@@ -418,25 +428,31 @@
+     endif()
+ 
+     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+-        if(WIN32 AND NOT SHIBOKEN_PYTHON_LIBRARIES)
++        #if(WIN32 AND NOT SHIBOKEN_PYTHON_LIBRARIES)
+             set(SHIBOKEN_PYTHON_LIBRARIES ${PYTHON_DEBUG_LIBRARIES})
+-        endif()
++        #endif()
      endif()
  
      if(CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -507,10 +515,16 @@ diff -aru sources/shiboken2/data/shiboken_helpers.cmake sources/shiboken2/data/s
              set(SHIBOKEN_PYTHON_LIBRARIES ${PYTHON_LIBRARIES})
 -        endif()
 +        #endif()
++    else()
++        set(SHIBOKEN_PYTHON_LIBRARIES ${PYTHON_LIBRARIES})
      endif()
  
++    #if ("${SHIBOKEN_PYTHON_LIBRARIES}" STREQUALS "")
++        MESSAGE(STATUS "\n\nWOOT\n\tPYTHON_LIBRARIES '${PYTHON_LIBRARIES}'\n\tPYTHON3_LIBRARIES '${PYTHON3_LIBRARIES}'\n\tPYTHON_LIBRARY '${PYTHON_LIBRARY}'\n\tPYTHON3_LIBRARY '${PYTHON3_LIBRARY}'")
++    #endif()
++
      # If the resulting variable
-@@ -434,9 +444,9 @@
+     # contains a "debug;X;optimized;Y" list like described in shiboken_check_if_limited_api,
      # make sure to pick just one, so that the final generator expressions are valid.
      shiboken_get_library_for_current_config("${SHIBOKEN_PYTHON_LIBRARIES}" "${CMAKE_BUILD_TYPE}" "SHIBOKEN_PYTHON_LIBRARIES")
  
@@ -524,8 +538,8 @@ diff -aru sources/shiboken2/data/shiboken_helpers.cmake sources/shiboken2/data/s
      # If the installed shiboken config file is used,
      # append the computed Python libraries as an interface property on the libshiboken target.
 diff -aru sources/shiboken2/generator/CMakeLists.txt sources/shiboken2/generator/CMakeLists.txt
---- sources/shiboken2/generator/CMakeLists.txt	2025-02-13 14:41:52.000000000 -0800
-+++ sources/shiboken2/generator/CMakeLists.txt	2025-05-19 12:33:13.000000000 -0700
+--- sources/shiboken2/generator/CMakeLists.txt	2025-03-02 22:17:49.702504300 -0800
++++ sources/shiboken2/generator/CMakeLists.txt	2025-05-28 08:40:01.537870100 -0700
 @@ -30,7 +30,7 @@
  
  install(TARGETS shiboken2
