@@ -1,0 +1,6 @@
+sources:
+  "18.1.8":
+    url: "https://github.com/llvm/llvm-project.git"
+patches:
+  "18.1.8":
+    - patch_file: "patches/18.1.8-fixes.patch"

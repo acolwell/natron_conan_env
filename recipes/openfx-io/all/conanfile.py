@@ -44,6 +44,7 @@ class openfx_ioRecipe(ConanFile):
         "ffmpeg/*:with_libfdk_aac": False, # non-free
         "ffmpeg/*:with_programs": False,
         "ffmpeg/*:with_ssl": False, # non-free until deps updated to openssl 3.x.x
+        "libraw/*:build_thread_safe": True,
         }
 
     _deps_lib_folder = "deps_libs"
