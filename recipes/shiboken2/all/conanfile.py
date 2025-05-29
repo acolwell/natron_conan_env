@@ -129,7 +129,7 @@ class Shiboken2Conanfile(ConanFile):
         self.cpp_info.components["libshiboken2"].libs = [self._get_lib_name("shiboken2")]
         self.cpp_info.components["libshiboken2"].libdirs = ["lib"]
         self.cpp_info.components["libshiboken2"].includedirs = ["include/shiboken2"]
-        self.cpp_info.components["libshiboken2"].requires = ["cpython::embed", "clang::clang", "qt::qtCore", "libxml2::libxml2", "libxslt::libxslt"]
+        self.cpp_info.components["libshiboken2"].requires = ["cpython::embed", "clang::libclang", "qt::qtCore", "libxml2::libxml2", "libxslt::libxslt"]
 
         if (self.dependencies['clang'].package_folder):
             self.buildenv_info.define_path("CLANG_INSTALL_DIR", self.dependencies["clang"].package_folder)
