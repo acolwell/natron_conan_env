@@ -1,6 +1,6 @@
 diff -aru sources/cmake_helpers/helpers.cmake sources/cmake_helpers/helpers.cmake
---- sources/cmake_helpers/helpers.cmake	2025-02-13 07:54:27.000000000 -0800
-+++ sources/cmake_helpers/helpers.cmake	2025-02-11 13:28:13.000000000 -0800
+--- sources/cmake_helpers/helpers.cmake	2025-03-02 22:07:56.656950000 -0800
++++ sources/cmake_helpers/helpers.cmake	2025-05-28 08:51:26.954782200 -0700
 @@ -47,8 +47,8 @@
      Charts
      Svg
@@ -67,8 +67,18 @@ diff -aru sources/cmake_helpers/helpers.cmake sources/cmake_helpers/helpers.cmak
          endif()
      else()
 diff -aru sources/shiboken2/ApiExtractor/CMakeLists.txt sources/shiboken2/ApiExtractor/CMakeLists.txt
---- sources/shiboken2/ApiExtractor/CMakeLists.txt	2025-02-13 07:54:28.000000000 -0800
-+++ sources/shiboken2/ApiExtractor/CMakeLists.txt	2025-02-11 13:28:13.000000000 -0800
+--- sources/shiboken2/ApiExtractor/CMakeLists.txt	2025-03-02 22:07:58.135950200 -0800
++++ sources/shiboken2/ApiExtractor/CMakeLists.txt	2025-05-30 09:07:03.455147900 -0700
+@@ -1,7 +1,7 @@
+ project(apiextractor)
+ 
+-cmake_minimum_required(VERSION 3.1)
+-cmake_policy(VERSION 3.1)
++cmake_minimum_required(VERSION 3.27)
++cmake_policy(VERSION 3.27)
+ 
+ set(CMAKE_AUTOMOC ON)
+ 
 @@ -32,8 +32,7 @@
  xmlutils.cpp
  )
@@ -106,8 +116,18 @@ diff -aru sources/shiboken2/ApiExtractor/CMakeLists.txt sources/shiboken2/ApiExt
  
  if (Qt${QT_MAJOR_VERSION}XmlPatterns_FOUND)
 diff -aru sources/shiboken2/CMakeLists.txt sources/shiboken2/CMakeLists.txt
---- sources/shiboken2/CMakeLists.txt	2025-02-13 07:54:28.000000000 -0800
-+++ sources/shiboken2/CMakeLists.txt	2025-02-11 13:28:13.000000000 -0800
+--- sources/shiboken2/CMakeLists.txt	2025-03-02 22:07:58.257951700 -0800
++++ sources/shiboken2/CMakeLists.txt	2025-05-30 09:07:23.500051300 -0700
+@@ -1,7 +1,7 @@
+ Include(icecc.cmake)
+ 
+-cmake_minimum_required(VERSION 3.1)
+-cmake_policy(VERSION 3.1)
++cmake_minimum_required(VERSION 3.27)
++cmake_policy(VERSION 3.27)
+ 
+ set(CMAKE_BUILD_TYPE Release CACHE STRING "Build Type")
+ 
 @@ -20,7 +20,7 @@
  
  set (QT_MAJOR_VERSION 5)
@@ -131,8 +151,8 @@ diff -aru sources/shiboken2/CMakeLists.txt sources/shiboken2/CMakeLists.txt
      add_subdirectory(shibokenmodule)
  
 diff -aru sources/shiboken2/data/shiboken_helpers.cmake sources/shiboken2/data/shiboken_helpers.cmake
---- sources/shiboken2/data/shiboken_helpers.cmake	2025-02-13 07:54:28.000000000 -0800
-+++ sources/shiboken2/data/shiboken_helpers.cmake	2025-02-12 13:23:29.000000000 -0800
+--- sources/shiboken2/data/shiboken_helpers.cmake	2025-03-02 22:07:58.271950700 -0800
++++ sources/shiboken2/data/shiboken_helpers.cmake	2025-05-30 09:03:57.429472900 -0700
 @@ -89,8 +89,10 @@
      execute_process(
          COMMAND ${PYTHON_EXECUTABLE} -c "if True:
@@ -146,13 +166,14 @@ diff -aru sources/shiboken2/data/shiboken_helpers.cmake sources/shiboken2/data/s
              "
          OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
          OUTPUT_STRIP_TRAILING_WHITESPACE)
-@@ -321,11 +323,19 @@
+@@ -321,11 +323,20 @@
          # If no version is specified, just use any interpreter that can be found (from PATH).
          # This is useful for super-project builds, so that the default system interpeter
          # gets picked up (e.g. /usr/bin/python and not /usr/bin/python2.7).
 -        find_package(PythonInterp REQUIRED)
 -        find_package(PythonLibs REQUIRED)
-+        find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
++        #find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
++        find_package(Python3)
      endif()
      shiboken_validate_python_version()
  
@@ -168,7 +189,15 @@ diff -aru sources/shiboken2/data/shiboken_helpers.cmake sources/shiboken2/data/s
      set(SHIBOKEN_PYTHON_INTERPRETER "${PYTHON_EXECUTABLE}")
      set_property(GLOBAL PROPERTY SHIBOKEN_PYTHON_INTERPRETER "${PYTHON_EXECUTABLE}")
  endmacro()
-@@ -424,9 +434,9 @@
+@@ -418,25 +429,31 @@
+     endif()
+ 
+     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+-        if(WIN32 AND NOT SHIBOKEN_PYTHON_LIBRARIES)
++        #if(WIN32 AND NOT SHIBOKEN_PYTHON_LIBRARIES)
+             set(SHIBOKEN_PYTHON_LIBRARIES ${PYTHON_DEBUG_LIBRARIES})
+-        endif()
++        #endif()
      endif()
  
      if(CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -177,10 +206,16 @@ diff -aru sources/shiboken2/data/shiboken_helpers.cmake sources/shiboken2/data/s
              set(SHIBOKEN_PYTHON_LIBRARIES ${PYTHON_LIBRARIES})
 -        endif()
 +        #endif()
++    else()
++        set(SHIBOKEN_PYTHON_LIBRARIES ${PYTHON_LIBRARIES})
      endif()
  
++    #if ("${SHIBOKEN_PYTHON_LIBRARIES}" STREQUALS "")
++        MESSAGE(STATUS "\n\nWOOT\n\tPYTHON_LIBRARIES '${PYTHON_LIBRARIES}'\n\tPYTHON3_LIBRARIES '${PYTHON3_LIBRARIES}'\n\tPYTHON_LIBRARY '${PYTHON_LIBRARY}'\n\tPYTHON3_LIBRARY '${PYTHON3_LIBRARY}'")
++    #endif()
++
      # If the resulting variable
-@@ -434,9 +444,9 @@
+     # contains a "debug;X;optimized;Y" list like described in shiboken_check_if_limited_api,
      # make sure to pick just one, so that the final generator expressions are valid.
      shiboken_get_library_for_current_config("${SHIBOKEN_PYTHON_LIBRARIES}" "${CMAKE_BUILD_TYPE}" "SHIBOKEN_PYTHON_LIBRARIES")
  
@@ -194,8 +229,8 @@ diff -aru sources/shiboken2/data/shiboken_helpers.cmake sources/shiboken2/data/s
      # If the installed shiboken config file is used,
      # append the computed Python libraries as an interface property on the libshiboken target.
 diff -aru sources/shiboken2/generator/CMakeLists.txt sources/shiboken2/generator/CMakeLists.txt
---- sources/shiboken2/generator/CMakeLists.txt	2025-02-13 07:54:28.000000000 -0800
-+++ sources/shiboken2/generator/CMakeLists.txt	2025-02-13 08:05:59.000000000 -0800
+--- sources/shiboken2/generator/CMakeLists.txt	2025-03-02 22:07:58.323951000 -0800
++++ sources/shiboken2/generator/CMakeLists.txt	2025-05-28 08:51:26.961781900 -0700
 @@ -30,7 +30,7 @@
  
  install(TARGETS shiboken2
