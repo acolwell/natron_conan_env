@@ -8,6 +8,7 @@ import os
 
 class ClangConanfile(ConanFile):
     name = "clang"
+    package_type = "application"
     version="18.1.8"
     description = "LLVM & Clang"
     license = "Apache-2.0"
@@ -62,3 +63,10 @@ class ClangConanfile(ConanFile):
     def package(self):
         cmake = CMake(self)
         cmake.install()
+
+    def package_info(self):
+        self.cpp_info.components["libclang"].libs = ["clang"]
+        self.cpp_info.components["libclang"].libdirs = ["lib"]
+        self.cpp_info.components["libclang"].includedirs = ["include"]
+        self.cpp_info.components["libclang"].requires = ["zstd::zstd", "zlib::zlib"]
+
