@@ -110,17 +110,27 @@ class Shiboken2Conanfile(ConanFile):
 
         if self.settings.os == "Macos" and suffix.endswith(".so"):
             suffix = suffix.replace(".so", ".dylib")
-
-        self.output.info(f"\n\nshiboken2 lib suffix: {suffix}\n")
+        elif self.settings.os == "Windows" and suffix.endswith(".pyd"):
+            suffix = suffix.replace(".pyd", ".lib")
 
         return f"{prefix}{base_name}{suffix}"
 
+    @property
+    def _shiboken2_binary_name(self):
+        shiboken2 = "shiboken2"
+        if self.settings.os == "Windows":
+            shiboken2 += ".exe"
+        return shiboken2
+
+    @property
+    def _shiboken2_binary_path(self):
+        return os.path.join(self.package_folder, "bin", self._shiboken2_binary_name)
+
     def package_info(self):
+        self.cpp_info.includedirs = ["include/shiboken2"]
         self.cpp_info.requires = ["clang::clang", "qt::qtCore"]
 
-        bindir = os.path.join(self.package_folder, "bin")
-        self.runenv_info.append_path("PATH", bindir)
-        self.buildenv_info.append_path("PATH", bindir)
+        self.conf_info.define("user.shiboken2:shiboken2", self._shiboken2_binary_path)
 
         if self.settings.os == "Macos":
             tmp_stringio = StringIO()
