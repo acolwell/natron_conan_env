@@ -46,7 +46,7 @@ class Shiboken2Conanfile(ConanFile):
         self.requires(f"qt/{self.version}")
         self.requires("libxml2/2.13.4")
         self.requires("libxslt/1.1.42")
-        self.requires("clang/18.1.8")
+        self.requires("clang/18.1.8", run=True)
         self.requires("cpython/3.10.14")
 
     def export_sources(self):
