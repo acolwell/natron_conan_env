@@ -41,7 +41,7 @@ jobs:
       - name: Generating Package Info
         id: gen_package_info
         run: |
-          python scripts/getBuildConanCachesPackageInfo.py cairo cpython qt ffmpeg >> $GITHUB_OUTPUT
+          python scripts/getBuildConanCachesPackageInfo.py cairo cpython shiboken2 ffmpeg >> $GITHUB_OUTPUT
 
   build_package_matrix:
     strategy:
