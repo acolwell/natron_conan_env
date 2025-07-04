@@ -12,6 +12,7 @@ from io import StringIO
 
 class Shiboken2Conanfile(ConanFile):
     name = "shiboken2"
+    package_type = "application"
     description = "Provides LGPL Qt5 bindings for Python and related tools for binding generation"
     license = "spdx:LGPL-3.0-only OR GPL-3.0-or-later"
     homepage = "https://doc.qt.io/qtforpython-5"
@@ -46,8 +47,9 @@ class Shiboken2Conanfile(ConanFile):
         self.requires(f"qt/{self.version}")
         self.requires("libxml2/2.13.4")
         self.requires("libxslt/1.1.42")
-        self.requires("clang/18.1.8", run=True)
         self.requires("cpython/3.10.14")
+        if not (self.settings.os == "Macos" and self.settings.arch == "armv8")
+            self.requires("clang/18.1.8")
 
     def export_sources(self):
         export_conandata_patches(self)
