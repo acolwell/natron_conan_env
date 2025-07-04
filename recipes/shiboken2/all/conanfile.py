@@ -12,7 +12,6 @@ from io import StringIO
 
 class Shiboken2Conanfile(ConanFile):
     name = "shiboken2"
-    package_type = "application"
     description = "Provides LGPL Qt5 bindings for Python and related tools for binding generation"
     license = "spdx:LGPL-3.0-only OR GPL-3.0-or-later"
     homepage = "https://doc.qt.io/qtforpython-5"
@@ -43,13 +42,19 @@ class Shiboken2Conanfile(ConanFile):
     def build_requirements(self):
         self.tool_requires("cpython/<host_version>")
 
+    def _dependsOnClang(self):
+        # Use clang package on all platforms except Macos ARM. On Macos ARM we used
+        # the system clang because the one built with conan appears to cause linking problems
+        # in shiboken2.
+        return not (self.settings.os == "Macos" and self.settings.arch == "armv8")
+
     def requirements(self):
         self.requires(f"qt/{self.version}")
         self.requires("libxml2/2.13.4")
         self.requires("libxslt/1.1.42")
         self.requires("cpython/3.10.14")
-        if not (self.settings.os == "Macos" and self.settings.arch == "armv8")
-            self.requires("clang/18.1.8")
+        if self._dependsOnClang():
+            self.requires("clang/18.1.8", run=True)
 
     def export_sources(self):
         export_conandata_patches(self)
@@ -68,7 +73,9 @@ class Shiboken2Conanfile(ConanFile):
 
     def generate(self):
         env = Environment()
-        env.define_path("CLANG_INSTALL_DIR", self.dependencies["clang"].package_folder)
+
+        if self._dependsOnClang():
+            env.define_path("CLANG_INSTALL_DIR", self.dependencies["clang"].package_folder)
         for bindir in self.dependencies["qt"].cpp_info.bindirs:
             env.append_path("PATH", bindir)
         env.vars(self).save_script("clang_env")
@@ -130,7 +137,9 @@ class Shiboken2Conanfile(ConanFile):
 
     def package_info(self):
         self.cpp_info.includedirs = ["include/shiboken2"]
-        self.cpp_info.requires = ["clang::clang", "qt::qtCore"]
+        self.cpp_info.requires = ["qt::qtCore"]
+        if self._dependsOnClang():
+            self.cpp_info.requires.append("clang::clang")
 
         self.conf_info.define("user.shiboken2:shiboken2", self._shiboken2_binary_path)
 
@@ -144,9 +153,11 @@ class Shiboken2Conanfile(ConanFile):
         self.cpp_info.components["libshiboken2"].libs = [self._get_lib_name("shiboken2")]
         self.cpp_info.components["libshiboken2"].libdirs = ["lib"]
         self.cpp_info.components["libshiboken2"].includedirs = ["include/shiboken2"]
-        self.cpp_info.components["libshiboken2"].requires = ["cpython::embed", "clang::clang", "qt::qtCore", "libxml2::libxml2", "libxslt::libxslt"]
+        self.cpp_info.components["libshiboken2"].requires = ["cpython::embed", "qt::qtCore", "libxml2::libxml2", "libxslt::libxslt"]
+        if self._dependsOnClang():
+            self.cpp_info.components["libshiboken2"].requires.append("clang::clang")
 
-        if (self.dependencies['clang'].package_folder):
+        if (self._dependsOnClang() and self.dependencies['clang'].package_folder):
             self.buildenv_info.define_path("CLANG_INSTALL_DIR", self.dependencies["clang"].package_folder)
             self.runenv_info.define_path("CLANG_INSTALL_DIR", self.dependencies["clang"].package_folder)
 
